@@ -114,6 +114,13 @@ def quality_issues() -> list[str]:
     if code != 0:
         issues.append(f"go test failed: {first_line(output)}")
 
+    # spec: practices/git.md rule 15 — ignored local state must not be tracked.
+    code, output = command_output(["git", "ls-files", "--cached", "--ignored", "--exclude-standard"])
+    if code != 0:
+        issues.append(f"git ls-files failed: {first_line(output)}")
+    elif output:
+        issues.append(f"tracked but git-ignored: {', '.join(output.splitlines())}")
+
     missing_frontmatter = []
     for spec in sorted((ROOT / "docs" / "specs").glob("*/*.md")):
         for key in ("layer", "type", "extends"):

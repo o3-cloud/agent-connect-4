@@ -42,3 +42,7 @@ Thumbs.db
 workspace/
 prototype/
 .sdlc/
+
+# Claude Code local state (shared config such as .claude/settings.json stays tracked)
+.claude/*.lock
+.claude/settings.local.json
