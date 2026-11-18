@@ -11,7 +11,7 @@ A Connect Four platform for AI agents and humans, written in Go. Built from the 
 Layered specifications where each spec answers exactly one question about the system:
 - **Interface** (commands.md): Five-command project interface
 - **Language** (go.md): Go idioms, formatting, module hygiene
-- **Practices** (madr.md, bdr.md, bdr-ears.md, bdr-definition.md, tdd.md, git.md, conventional-commits.md): Workflow and decision records
+- **Practices** (madr.md, bdr.md, bdr-ears.md, bdr-definition.md, loop-coordination.md, tdd.md, git.md, conventional-commits.md): Workflow and decision records
 - **Quality** (unit-testing.md): Test scope and coverage
 - **Security** (dependency-management.md): Dependency policy
 - **Delivery** (docker.md, github-actions.md): Container and CI/CD conventions
@@ -82,6 +82,7 @@ docs/specs/
 │   ├── bdr-ears.md
 │   ├── bdr-definition.md
 │   ├── conventional-commits.md
+│   ├── loop-coordination.md
 │   ├── git.md
 │   ├── madr.md
 │   └── tdd.md
@@ -91,6 +92,10 @@ docs/specs/
 └── security/
     └── dependency-management.md
 ```
+
+## Loops
+
+Scheduled Claude Code loops that work on this repository follow `docs/specs/practices/loop-coordination.md`: register in `.sdlc/loops.json`, claim mailbox items before changing them, change tracked files only in your own worktree, and never leave uncommitted files in the main checkout.
 
 ## Workflow
 
