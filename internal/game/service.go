@@ -49,6 +49,7 @@ const (
 	ReasonNone        ResultReason = ""
 	ReasonConnectFour ResultReason = "connect_four"
 	ReasonDraw        ResultReason = "draw"
+	ReasonResignation ResultReason = "resignation"
 )
 
 const maxDisplayName = 64
@@ -330,6 +331,37 @@ func (s *Service) Move(gameID, playerID string, column, expectedVersion int) (Mo
 		ResultReason: g.ResultReason,
 		Version:      g.Version,
 	}, nil
+}
+
+// Resign ends playerID's in-progress game with the opponent as winner
+// (TURN-007, GAME-006). A player may resign whether or not it is their turn.
+func (s *Service) Resign(gameID, playerID string) (Game, error) {
+	rec, err := s.lookup(gameID)
+	if err != nil {
+		return Game{}, err
+	}
+
+	rec.mu.Lock()
+	defer rec.mu.Unlock()
+	g := &rec.game
+	resigner := g.playerByID(playerID)
+	switch {
+	case resigner == nil:
+		return Game{}, newError(CodeForbidden, gameID, "you are not a player in this game")
+	case g.Status == StatusCompleted:
+		return Game{}, ruleError(CodeGameCompleted, g, "the game is over")
+	case g.Status == StatusWaiting:
+		return Game{}, ruleError(CodeGameNotStarted, g, "the game starts when both players have joined")
+	}
+
+	g.Status = StatusCompleted
+	g.CurrentTurn = engine.Empty
+	g.LegalMoves = []int{}
+	g.Winner = resigner.Disc.Opponent()
+	g.ResultReason = ReasonResignation
+	g.Version++
+	g.UpdatedAt = s.now()
+	return g.snapshot(), nil
 }
 
 func (s *Service) lookup(gameID string) (*record, error) {

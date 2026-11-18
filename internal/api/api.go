@@ -90,6 +90,16 @@ func Register(mux *http.ServeMux, service *game.Service) {
 			http.StatusConflict, http.StatusUnprocessableEntity},
 	}, h.move)
 
+	huma.Register(api, huma.Operation{
+		OperationID: "resignGame",
+		Method:      http.MethodPost,
+		Path:        Prefix + "/games/{gameId}/resign",
+		Summary:     "Resign a game",
+		Description: "Ends the caller's in-progress game immediately; the opponent wins with `resultReason` `resignation`. Either player may resign, whether or not it is their turn (TURN-007).",
+		Security:    authed,
+		Errors:      []int{http.StatusUnauthorized, http.StatusForbidden, http.StatusNotFound, http.StatusConflict},
+	}, h.resign)
+
 	mux.HandleFunc(Prefix+"/", func(w http.ResponseWriter, _ *http.Request) {
 		writeError(w, newErrorResponse(game.CodeRouteNotFound, "no such endpoint; see "+Prefix+"/openapi.json"))
 	})
@@ -213,6 +223,23 @@ func (h handlers) move(_ context.Context, in *moveInput) (*moveOutput, error) {
 	}}, nil
 }
 
+type resignInput struct {
+	Authorization string `header:"Authorization" doc:"Bearer credentials: Authorization: Bearer <token>"`
+	GameID        string `path:"gameId" maxLength:"64" doc:"Game identifier"`
+}
+
+func (h handlers) resign(_ context.Context, in *resignInput) (*gameOutput, error) {
+	id, err := playerID(in.Authorization)
+	if err != nil {
+		return nil, err
+	}
+	g, err := h.service.Resign(in.GameID, id)
+	if err != nil {
+		return nil, fromError(err)
+	}
+	return &gameOutput{Body: viewOf(g)}, nil
+}
+
 // PlayerView is a player in a game.
 type PlayerView struct {
 	ID          string `json:"id" doc:"Stable player identifier derived from the credentials"`
@@ -249,7 +276,7 @@ type GameView struct {
 	CurrentTurn  *string     `json:"currentTurn" doc:"red, yellow, or null when the game is not in progress"`
 	LegalMoves   []int       `json:"legalMoves" doc:"Playable columns; empty unless the game is in progress"`
 	Winner       *string     `json:"winner" doc:"red, yellow, or null"`
-	ResultReason *string     `json:"resultReason" doc:"connect_four, draw, or null"`
+	ResultReason *string     `json:"resultReason" doc:"connect_four, draw, resignation, or null"`
 	Version      int         `json:"version" doc:"State version; increases by one with each accepted move"`
 	MoveNumber   int         `json:"moveNumber" doc:"Number of accepted moves"`
 	Moves        []MoveView  `json:"moves"`
