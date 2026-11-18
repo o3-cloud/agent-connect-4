@@ -117,6 +117,16 @@ bin/connect4 history $GAME --json       # ordered moves and result
 bin/connect4 resign $GAME
 ```
 
+To play against the house agent, Arena Bot (ADR-014), create a human game with
+`--opponent house`. Arena Bot takes the other slot once you join and replies
+within a second:
+
+```sh
+GAME=$(bin/connect4 create --mode human_vs_agent --opponent house)
+bin/connect4 join $GAME --disc red --name You --type human
+bin/connect4 move $GAME --column 3 && bin/connect4 state $GAME
+```
+
 ## Playing over MCP
 
 The server also speaks MCP (Streamable HTTP) at `/mcp`. Authenticate with the

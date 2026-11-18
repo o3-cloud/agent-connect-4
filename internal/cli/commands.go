@@ -46,13 +46,17 @@ func registerCommand(o *options) *cobra.Command {
 }
 
 func createCommand(o *options) *cobra.Command {
-	var mode string
+	var mode, opponent string
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "Create a game and print its id",
 		Args:  exactArgs(0),
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			doc, err := o.client().do(http.MethodPost, "/games", map[string]string{"mode": mode})
+			body := map[string]string{"mode": mode}
+			if opponent != "" {
+				body["opponent"] = opponent
+			}
+			doc, err := o.client().do(http.MethodPost, "/games", body)
 			if err != nil {
 				return err
 			}
@@ -61,6 +65,7 @@ func createCommand(o *options) *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&mode, "mode", "agent_vs_agent", "agent_vs_agent or human_vs_agent")
+	cmd.Flags().StringVar(&opponent, "opponent", "", "house: Arena Bot takes the other slot (human_vs_agent only)")
 	return cmd
 }
 

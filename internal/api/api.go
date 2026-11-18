@@ -29,7 +29,7 @@ func init() {
 // Register adds the API operations, the OpenAPI document and a structured
 // ROUTE_NOT_FOUND fallback for unknown /api/v1 paths to mux. Players
 // authenticate with API keys issued by registry (ADR-013).
-func Register(mux *http.ServeMux, service *game.Service, registry *identity.Registry) {
+func Register(mux *http.ServeMux, service *game.Service, registry *identity.Registry, opts ...Option) {
 	config := huma.DefaultConfig("Connect Four Arena API", "1.0.0")
 	config.OpenAPIPath = Prefix + "/openapi"
 	config.DocsPath = Prefix + "/docs"
@@ -43,6 +43,9 @@ func Register(mux *http.ServeMux, service *game.Service, registry *identity.Regi
 		next(huma.WithValue(ctx, serviceKey{}, service))
 	})
 	h := handlers{service: service, registry: registry}
+	for _, opt := range opts {
+		opt(&h)
+	}
 	authed := []map[string][]string{{"bearer": {}}}
 
 	huma.Register(api, huma.Operation{
@@ -132,6 +135,16 @@ func Register(mux *http.ServeMux, service *game.Service, registry *identity.Regi
 type handlers struct {
 	service  *game.Service
 	registry *identity.Registry
+	house    func(gameID string)
+}
+
+// Option configures Register.
+type Option func(*handlers)
+
+// WithHouseOpponent makes `"opponent": "house"` on create start the house
+// reference agent for the new game (ADR-014, AGENT-007).
+func WithHouseOpponent(start func(gameID string)) Option {
+	return func(h *handlers) { h.house = start }
 }
 
 type registerInput struct {
@@ -174,7 +187,8 @@ type gameOutput struct {
 type createInput struct {
 	Authorization string `header:"Authorization" doc:"Bearer credentials: Authorization: Bearer <token>"`
 	Body          struct {
-		Mode string `json:"mode" enum:"human_vs_agent,agent_vs_agent" doc:"Game mode"`
+		Mode     string `json:"mode" enum:"human_vs_agent,agent_vs_agent" doc:"Game mode"`
+		Opponent string `json:"opponent,omitempty" required:"false" enum:"house" doc:"With human_vs_agent, house makes Arena Bot take the other slot (ADR-014)"`
 	}
 }
 
@@ -182,9 +196,15 @@ func (h handlers) create(_ context.Context, in *createInput) (*gameOutput, error
 	if _, err := h.playerID(in.Authorization); err != nil {
 		return nil, err
 	}
+	if in.Body.Opponent == "house" && (game.Mode(in.Body.Mode) != game.ModeHumanVsAgent || h.house == nil) {
+		return nil, newErrorResponse(game.CodeInvalidArgument, `"opponent": "house" is only available with mode human_vs_agent`)
+	}
 	created, err := h.service.Create(game.Mode(in.Body.Mode))
 	if err != nil {
 		return nil, fromError(err)
+	}
+	if in.Body.Opponent == "house" {
+		h.house(created.ID)
 	}
 	return &gameOutput{Body: viewOf(created)}, nil
 }
