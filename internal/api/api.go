@@ -23,6 +23,7 @@ const Prefix = "/api/v1"
 
 func init() {
 	huma.NewError = newHumaError
+	huma.NewErrorWithContext = newHumaErrorWithContext
 }
 
 // Register adds the API operations, the OpenAPI document and a structured
@@ -37,6 +38,9 @@ func Register(mux *http.ServeMux, service *game.Service) {
 		"bearer": {Type: "http", Scheme: "bearer", Description: "Any non-empty token is a test identity until BDR-013."},
 	}
 	api := humago.New(mux, config)
+	api.UseMiddleware(func(ctx huma.Context, next func(huma.Context)) {
+		next(huma.WithValue(ctx, serviceKey{}, service))
+	})
 	h := handlers{service: service}
 	authed := []map[string][]string{{"bearer": {}}}
 

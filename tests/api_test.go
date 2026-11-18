@@ -384,12 +384,15 @@ func TestAPIRejectInvalidMoves(t *testing.T) {
 		`{"column": 3.5, "expectedVersion": 0}`,
 		`{"column": "three", "expectedVersion": 0}`,
 	} {
-		a.red.do(http.MethodPost, path, body).wantError(t, http.StatusUnprocessableEntity, "INVALID_COLUMN")
+		// SPEC.md §16: game-rule errors carry gameId and currentVersion, whether the
+		// column fails schema validation (3.5, "three") or the range check (7, -1).
+		ruleErr := a.red.do(http.MethodPost, path, body).wantError(t, http.StatusUnprocessableEntity, "INVALID_COLUMN")
+		if _, ok := ruleErr["currentVersion"]; !ok || number(ruleErr["currentVersion"]) != 0 || ruleErr["gameId"] != a.gameID {
+			t.Fatalf("INVALID_COLUMN context for %s = %v", body, ruleErr)
+		}
 	}
-	ruleErr := a.red.do(http.MethodPost, path, `{"column": 7, "expectedVersion": 0}`).wantError(t, http.StatusUnprocessableEntity, "INVALID_COLUMN")
-	if number(ruleErr["currentVersion"]) != 0 || ruleErr["gameId"] != a.gameID {
-		t.Fatalf("INVALID_COLUMN context = %v", ruleErr)
-	}
+	a.red.do(http.MethodPost, "/api/v1/games/game_missing/moves", `{"column": 3.5, "expectedVersion": 0}`).
+		wantError(t, http.StatusNotFound, "GAME_NOT_FOUND")
 
 	stale := a.red.do(http.MethodPost, path, `{"column": 3, "expectedVersion": 4}`).wantError(t, http.StatusConflict, "STALE_STATE")
 	if number(stale["currentVersion"]) != 0 || stale["retryable"] != true {

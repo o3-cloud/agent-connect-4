@@ -123,6 +123,39 @@ func newHumaError(status int, message string, errs ...error) huma.StatusError {
 	return resp
 }
 
+// serviceKey is the request-context key under which Register stores the game
+// service, so framework-generated errors can add game context.
+type serviceKey struct{}
+
+// newHumaErrorWithContext replaces huma.NewErrorWithContext. A column that
+// fails schema validation (3.5, "three") never reaches the handler, so this
+// adds the gameId and currentVersion that SPEC.md §16 requires on game-rule
+// errors, or reports GAME_NOT_FOUND when the game does not exist.
+func newHumaErrorWithContext(ctx huma.Context, status int, message string, errs ...error) huma.StatusError {
+	se := newHumaError(status, message, errs...)
+	resp, ok := se.(*ErrorResponse)
+	if !ok || ctx == nil || resp.Err.Code != string(game.CodeInvalidColumn) {
+		return se
+	}
+	service, _ := ctx.Context().Value(serviceKey{}).(*game.Service)
+	gameID := ctx.Param("gameId")
+	if service == nil || gameID == "" {
+		return se
+	}
+	g, err := service.Get(gameID)
+	if err != nil {
+		var notFound *ErrorResponse
+		if errors.As(fromError(err), &notFound) {
+			return notFound
+		}
+		return se
+	}
+	version := g.Version
+	resp.Err.GameID = g.ID
+	resp.Err.CurrentVersion = &version
+	return resp
+}
+
 // writeError writes an API error outside Huma, e.g. for unknown routes.
 func writeError(w http.ResponseWriter, resp *ErrorResponse) {
 	w.Header().Set("Content-Type", "application/json")
