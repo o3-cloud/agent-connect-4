@@ -229,8 +229,13 @@ func (h handlers) history(_ context.Context, in *gameIDInput) (*historyOutput, e
 	if err != nil {
 		return nil, fromError(err)
 	}
+	return &historyOutput{Body: HistoryViewOf(g)}, nil
+}
+
+// HistoryViewOf returns the move history and result of g (API-006, MCP-007).
+func HistoryViewOf(g game.Game) HistoryView {
 	view := viewOf(g)
-	return &historyOutput{Body: HistoryView{
+	return HistoryView{
 		GameID:       view.GameID,
 		Mode:         view.Mode,
 		Status:       view.Status,
@@ -239,7 +244,7 @@ func (h handlers) history(_ context.Context, in *gameIDInput) (*historyOutput, e
 		Winner:       view.Winner,
 		ResultReason: view.ResultReason,
 		Version:      view.Version,
-	}}, nil
+	}
 }
 
 type joinInput struct {
@@ -287,7 +292,12 @@ func (h handlers) move(_ context.Context, in *moveInput) (*moveOutput, error) {
 	if err != nil {
 		return nil, fromError(err)
 	}
-	return &moveOutput{Body: MoveResponse{
+	return &moveOutput{Body: MoveResponseOf(result)}, nil
+}
+
+// MoveResponseOf returns the view of an accepted move (API-005, MCP-005).
+func MoveResponseOf(result game.MoveResult) MoveResponse {
+	return MoveResponse{
 		GameID:       result.GameID,
 		Accepted:     result.Accepted,
 		Move:         moveViewOf(result.Move),
@@ -296,7 +306,7 @@ func (h handlers) move(_ context.Context, in *moveInput) (*moveOutput, error) {
 		Winner:       discOrNull(result.Winner),
 		ResultReason: reasonOrNull(result.ResultReason),
 		Version:      result.Version,
-	}}, nil
+	}
 }
 
 type resignInput struct {
@@ -383,6 +393,9 @@ type MoveResponse struct {
 	ResultReason *string  `json:"resultReason"`
 	Version      int      `json:"version"`
 }
+
+// GameViewOf returns the authoritative state view of g (GAME-005, MCP-004).
+func GameViewOf(g game.Game) GameView { return viewOf(g) }
 
 func viewOf(g game.Game) GameView {
 	board := make([][]*string, engine.Rows)

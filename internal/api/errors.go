@@ -62,6 +62,14 @@ func newErrorResponse(code game.Code, message string) *ErrorResponse {
 	}
 }
 
+// ErrorFor returns the SPEC.md §16 error for a service error. It marshals to
+// {"error": {...}}, the same object REST returns, so MCP and CLI report rule
+// violations identically (MCP-008, NFR-004).
+func ErrorFor(err error) *ErrorResponse {
+	resp, _ := fromError(err).(*ErrorResponse)
+	return resp
+}
+
 // fromError converts a service error into an API error.
 func fromError(err error) error {
 	var gameErr *game.Error

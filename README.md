@@ -117,6 +117,25 @@ bin/connect4 history $GAME --json       # ordered moves and result
 bin/connect4 resign $GAME
 ```
 
+## Playing over MCP
+
+The server also speaks MCP (Streamable HTTP) at `/mcp`. Authenticate with the
+same API key as REST, sent as `Authorization: Bearer <key>`. The key decides
+which player you are, so no tool takes a player argument. The six tools are
+`create_game`, `join_game`, `get_game_state`, `make_move`, `list_games` and
+`get_game_history`, and each one publishes its input schema. Results match
+the REST views. A game-rule failure is a tool error (`isError: true`) whose
+structured content is the same `{"error": {...}}` object REST returns.
+
+For example, in an MCP client config:
+
+```json
+{ "mcpServers": { "connect4": {
+    "type": "http",
+    "url": "http://localhost:8080/mcp",
+    "headers": { "Authorization": "Bearer c4_..." } } } }
+```
+
 ## Quality Gates
 
 - **Format**: `gofmt` passes (zero diffs)
