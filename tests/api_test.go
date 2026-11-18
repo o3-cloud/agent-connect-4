@@ -521,3 +521,42 @@ func TestAPIFullBoardIsADraw(t *testing.T) {
 	a.red.do(http.MethodPost, "/api/v1/games/"+a.gameID+"/moves", map[string]any{"column": 0, "expectedVersion": 42}).
 		wantError(t, http.StatusConflict, "GAME_COMPLETED")
 }
+
+// BDR-004 scenarios 1-2, AC-1..4.
+func TestAPIListGamesFiltersByStatus(t *testing.T) {
+	a := newArena(t)
+	waitingID := a.create(t)
+	a.start(t)
+	inProgressID := a.gameID
+	a.start(t)
+	a.movesPlayed = 0
+	a.play(t, 0, 0, 1, 1, 2, 2, 3)
+	completedID := a.gameID
+
+	for status, want := range map[string]string{"waiting": waitingID, "in_progress": inProgressID, "completed": completedID} {
+		list := a.anon.do(http.MethodGet, "/api/v1/games?status="+status, nil).wantStatus(t, http.StatusOK)
+		games := list.body["games"].([]any)
+		if len(games) != 1 {
+			t.Fatalf("status=%s returned %d games: %s", status, len(games), list.raw)
+		}
+		entry := games[0].(map[string]any)
+		if entry["gameId"] != want || entry["status"] != status || entry["mode"] != "agent_vs_agent" {
+			t.Fatalf("status=%s entry = %v, want %s", status, entry, want)
+		}
+		if _, ok := entry["players"].(map[string]any); !ok {
+			t.Fatalf("status=%s entry has no players: %v", status, entry)
+		}
+	}
+
+	all := a.anon.do(http.MethodGet, "/api/v1/games", nil).wantStatus(t, http.StatusOK)
+	if games := all.body["games"].([]any); len(games) != 3 {
+		t.Fatalf("unfiltered list has %d games, want 3", len(games))
+	}
+	for _, token := range []string{a.red.token, a.yellow.token} {
+		if strings.Contains(all.raw, token) {
+			t.Fatalf("game list leaks credential %q", token)
+		}
+	}
+
+	a.anon.do(http.MethodGet, "/api/v1/games?status=paused", nil).wantError(t, http.StatusBadRequest, "INVALID_ARGUMENT")
+}

@@ -56,7 +56,8 @@ func Register(mux *http.ServeMux, service *game.Service) {
 		Method:      http.MethodGet,
 		Path:        Prefix + "/games",
 		Summary:     "List games",
-		Description: "Lists every game in creation order (GAME-008).",
+		Description: "Lists games in creation order, optionally only those in one status (GAME-008).",
+		Errors:      []int{http.StatusBadRequest},
 	}, h.list)
 
 	huma.Register(api, huma.Operation{
@@ -130,10 +131,18 @@ type listOutput struct {
 	}
 }
 
-func (h handlers) list(_ context.Context, _ *struct{}) (*listOutput, error) {
+type listInput struct {
+	Status string `query:"status" required:"false" enum:"waiting,in_progress,completed" doc:"Only return games in this status"`
+}
+
+func (h handlers) list(_ context.Context, in *listInput) (*listOutput, error) {
+	games, err := h.service.ListByStatus(game.Status(in.Status))
+	if err != nil {
+		return nil, fromError(err)
+	}
 	out := &listOutput{}
 	out.Body.Games = []GameView{}
-	for _, g := range h.service.List() {
+	for _, g := range games {
 		out.Body.Games = append(out.Body.Games, viewOf(g))
 	}
 	return out, nil

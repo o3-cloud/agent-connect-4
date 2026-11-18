@@ -353,3 +353,38 @@ func TestErrorMessageIncludesCode(t *testing.T) {
 		t.Fatalf("Error() = %q, want %q", got, want)
 	}
 }
+
+// BDR-004 AC-3: filtering by status returns only games in that status.
+func TestListByStatusFiltersGames(t *testing.T) {
+	service, started := startedGame(t)
+	waiting, _ := service.Create(game.ModeHumanVsAgent)
+	finished, _ := service.Create(game.ModeAgentVsAgent)
+	if _, err := service.Join(finished.ID, alice, engine.Red, "Alpha", game.PlayerAgent); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := service.Join(finished.ID, bob, engine.Yellow, "Beta", game.PlayerAgent); err != nil {
+		t.Fatal(err)
+	}
+	playMoves(t, service, finished.ID, 0, 0, 1, 1, 2, 2, 3)
+
+	for status, want := range map[game.Status]string{
+		game.StatusWaiting:    waiting.ID,
+		game.StatusInProgress: started.ID,
+		game.StatusCompleted:  finished.ID,
+	} {
+		got, err := service.ListByStatus(status)
+		if err != nil {
+			t.Fatalf("ListByStatus(%s): %v", status, err)
+		}
+		if len(got) != 1 || got[0].ID != want || got[0].Status != status {
+			t.Fatalf("ListByStatus(%s) = %+v, want only %s", status, got, want)
+		}
+	}
+
+	all, err := service.ListByStatus("")
+	if err != nil || len(all) != 3 {
+		t.Fatalf("ListByStatus(\"\") = %d games, %v; want all 3", len(all), err)
+	}
+	_, err = service.ListByStatus("paused")
+	wantCode(t, err, game.CodeInvalidArgument)
+}

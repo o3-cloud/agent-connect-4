@@ -230,6 +230,19 @@ func (s *Service) Get(gameID string) (Game, error) {
 
 // List returns every game in creation order (GAME-008).
 func (s *Service) List() []Game {
+	games, _ := s.ListByStatus("")
+	return games
+}
+
+// ListByStatus returns the games in status, in creation order; an empty
+// status returns every game (GAME-008, MCP-006).
+func (s *Service) ListByStatus(status Status) ([]Game, error) {
+	switch status {
+	case "", StatusWaiting, StatusInProgress, StatusCompleted:
+	default:
+		return nil, newError(CodeInvalidArgument, "", "status must be waiting, in_progress or completed")
+	}
+
 	s.mu.RLock()
 	records := make([]*record, 0, len(s.order))
 	for _, id := range s.order {
@@ -240,10 +253,12 @@ func (s *Service) List() []Game {
 	games := make([]Game, 0, len(records))
 	for _, rec := range records {
 		rec.mu.Lock()
-		games = append(games, rec.game.snapshot())
+		if status == "" || rec.game.Status == status {
+			games = append(games, rec.game.snapshot())
+		}
 		rec.mu.Unlock()
 	}
-	return games
+	return games, nil
 }
 
 // Move submits playerID's disc to column, provided expectedVersion matches the
