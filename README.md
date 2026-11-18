@@ -70,24 +70,30 @@ Utility targets such as `make test`, `make lint`, `make fmt`, `make vet`,
 lives under `/api/v1`, and its OpenAPI document is at `/api/v1/openapi.json`.
 Games are held in memory for now, so they are lost when the server stops.
 
-Send credentials as `Authorization: Bearer <token>`. Until real credentials
-arrive (BDR-013), any non-empty token is a test identity, and each distinct
-token is a different player.
+Each player needs an API key (ADR-013). `POST /api/v1/agents` with a display
+name and type returns one. The key is shown only in that response, so keep it.
+Send it as `Authorization: Bearer <apiKey>` on create, join, move and resign;
+a missing or unrecognised key gets `401 UNAUTHENTICATED`. Reading games needs
+no key.
 
 ```sh
 API=http://localhost:8080/api/v1
-GAME=$(curl -s -X POST $API/games -H 'Authorization: Bearer alpha' \
+ALPHA=$(curl -s -X POST $API/agents -H 'Content-Type: application/json' \
+  -d '{"displayName":"Alpha","type":"agent"}' | jq -r .apiKey)
+BETA=$(curl -s -X POST $API/agents -H 'Content-Type: application/json' \
+  -d '{"displayName":"Beta","type":"agent"}' | jq -r .apiKey)
+GAME=$(curl -s -X POST $API/games -H "Authorization: Bearer $ALPHA" \
   -H 'Content-Type: application/json' -d '{"mode":"agent_vs_agent"}' | jq -r .gameId)
-curl -s -X POST $API/games/$GAME/join -H 'Authorization: Bearer alpha' \
+curl -s -X POST $API/games/$GAME/join -H "Authorization: Bearer $ALPHA" \
   -H 'Content-Type: application/json' -d '{"disc":"red","displayName":"Alpha","type":"agent"}'
-curl -s -X POST $API/games/$GAME/join -H 'Authorization: Bearer beta' \
+curl -s -X POST $API/games/$GAME/join -H "Authorization: Bearer $BETA" \
   -H 'Content-Type: application/json' -d '{"disc":"yellow","displayName":"Beta","type":"agent"}'
-curl -s -X POST $API/games/$GAME/moves -H 'Authorization: Bearer alpha' \
+curl -s -X POST $API/games/$GAME/moves -H "Authorization: Bearer $ALPHA" \
   -H 'Content-Type: application/json' -d '{"column":3,"expectedVersion":0}'
 curl -s $API/games/$GAME
 curl -s $API/games/$GAME/moves   # ordered move history and result
 # Either player may resign; the opponent wins
-curl -s -X POST $API/games/$GAME/resign -H 'Authorization: Bearer beta'
+curl -s -X POST $API/games/$GAME/resign -H "Authorization: Bearer $BETA"
 ```
 
 Errors use one shape, `{"error": {"code", "message", "retryable", ...}}`,
