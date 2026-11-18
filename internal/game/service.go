@@ -123,6 +123,12 @@ type record struct {
 	mu    sync.Mutex
 	game  Game
 	board *engine.Board
+	// replays holds accepted move results by player and idempotency key (API-008).
+	replays map[replayKey]MoveResult
+}
+
+type replayKey struct {
+	playerID, key string
 }
 
 // Service holds games in memory. It is safe for concurrent use; each game has
@@ -265,6 +271,14 @@ func (s *Service) ListByStatus(status Status) ([]Game, error) {
 // Move submits playerID's disc to column, provided expectedVersion matches the
 // current version (TURN-001..006, RULE-002..010).
 func (s *Service) Move(gameID, playerID string, column, expectedVersion int) (MoveResult, error) {
+	return s.MoveWithKey(gameID, playerID, column, expectedVersion, "")
+}
+
+// MoveWithKey is Move with an idempotency key (API-008). If playerID already
+// had a move accepted in this game under the same non-empty key, it returns
+// that recorded result without playing again, even if the game has moved on.
+// Rejected moves are not recorded, so a retry of one is evaluated afresh.
+func (s *Service) MoveWithKey(gameID, playerID string, column, expectedVersion int, key string) (MoveResult, error) {
 	rec, err := s.lookup(gameID)
 	if err != nil {
 		return MoveResult{}, err
@@ -274,9 +288,15 @@ func (s *Service) Move(gameID, playerID string, column, expectedVersion int) (Mo
 	defer rec.mu.Unlock()
 	g := &rec.game
 	mover := g.playerByID(playerID)
-	switch {
-	case mover == nil:
+	if mover == nil {
 		return MoveResult{}, newError(CodeForbidden, gameID, "you are not a player in this game")
+	}
+	if key != "" {
+		if prior, ok := rec.replays[replayKey{playerID, key}]; ok {
+			return prior, nil
+		}
+	}
+	switch {
 	case g.Status == StatusCompleted:
 		return MoveResult{}, ruleError(CodeGameCompleted, g, "the game is over")
 	case g.Status == StatusWaiting:
@@ -321,7 +341,7 @@ func (s *Service) Move(gameID, playerID string, column, expectedVersion int) (Mo
 		g.LegalMoves = rec.board.LegalMoves()
 	}
 
-	return MoveResult{
+	result := MoveResult{
 		GameID:       g.ID,
 		Accepted:     true,
 		Move:         move,
@@ -330,7 +350,14 @@ func (s *Service) Move(gameID, playerID string, column, expectedVersion int) (Mo
 		Winner:       g.Winner,
 		ResultReason: g.ResultReason,
 		Version:      g.Version,
-	}, nil
+	}
+	if key != "" {
+		if rec.replays == nil {
+			rec.replays = map[replayKey]MoveResult{}
+		}
+		rec.replays[replayKey{playerID, key}] = result
+	}
+	return result, nil
 }
 
 // Resign ends playerID's in-progress game with the opponent as winner

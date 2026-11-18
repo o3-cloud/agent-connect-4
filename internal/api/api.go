@@ -270,7 +270,7 @@ type moveInput struct {
 	Body          struct {
 		Column          int    `json:"column" doc:"Column index from 0 to 6"`
 		ExpectedVersion int    `json:"expectedVersion" minimum:"0" doc:"The game version the move is based on"`
-		IdempotencyKey  string `json:"idempotencyKey,omitempty" required:"false" maxLength:"128" doc:"Accepted but not yet enforced (API-008)"`
+		IdempotencyKey  string `json:"idempotencyKey,omitempty" required:"false" maxLength:"128" doc:"Optional retry key. Resending a move with the same key in the same game returns the recorded result without playing again (API-008)"`
 	}
 }
 
@@ -283,7 +283,7 @@ func (h handlers) move(_ context.Context, in *moveInput) (*moveOutput, error) {
 	if err != nil {
 		return nil, err
 	}
-	result, err := h.service.Move(in.GameID, id, in.Body.Column, in.Body.ExpectedVersion)
+	result, err := h.service.MoveWithKey(in.GameID, id, in.Body.Column, in.Body.ExpectedVersion, in.Body.IdempotencyKey)
 	if err != nil {
 		return nil, fromError(err)
 	}
