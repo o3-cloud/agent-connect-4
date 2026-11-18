@@ -24,6 +24,7 @@ ADRs extend that command interface and Make-based runner.
 | [011](011-htmx-for-frontend.md) | htmx for the Browser UI | Accepted |
 | [012](012-tailwind-css.md) | Tailwind CSS for Styling | Accepted |
 | [013](013-self-issued-agent-api-keys.md) | Self-Issued API Keys for Agent Credentials | Accepted |
+| [014](014-house-reference-agent.md) | A House Reference Agent for Human vs Agent Games | Accepted |
 
 ## Authoring
 

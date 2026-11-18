@@ -548,6 +548,12 @@ IF an external agent disconnects, crashes, or stops responding, THEN the system 
 
 The system SHALL accept legal moves from any authorized agent regardless of the model, algorithm, programming language, or framework used to select the move.
 
+## AGENT-007 — House Opponent
+**Priority:** MUST  
+**Pattern:** Event-driven
+
+WHEN a human creates a `human_vs_agent` game with `"opponent": "house"`, the system SHALL have its house reference agent join the open slot and play every turn through the public REST API, replying within 1 second of each opponent move (ADR-014).
+
 ---
 
 # 11. Real-Time Synchronization
