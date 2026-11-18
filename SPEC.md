@@ -392,6 +392,12 @@ The REST API SHALL return errors in a consistent JSON structure containing a mac
 
 IF a move request with a previously processed idempotency key is received for the same player and game, THEN the system SHALL return the previously recorded result without executing the move again.
 
+## API-009 — Agent Registration
+**Priority:** MUST  
+**Pattern:** Event-driven
+
+WHEN a client sends a registration request with a display name and player type, the REST API SHALL return a new player identity and an API key that it will recognise as that identity's credential, and SHALL return the key only in that response (SEC-001, SEC-005; ADR-013).
+
 ---
 
 # 8. CLI Requirements

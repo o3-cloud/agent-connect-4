@@ -26,6 +26,7 @@ Application stack ADRs (these replace the TypeScript stack recommended in `SPEC.
 - **ADR-010**: Cobra for the `connect4` CLI
 - **ADR-011**: htmx for the browser UI (server-rendered fragments)
 - **ADR-012**: Tailwind CSS (standalone CLI) for styling
+- **ADR-013**: Self-issued API keys for agent credentials (`POST /api/v1/agents`)
 
 ## Prototype
 

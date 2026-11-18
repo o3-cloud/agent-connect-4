@@ -23,6 +23,7 @@ ADRs extend that command interface and Make-based runner.
 | [010](010-cobra-for-cli.md) | Cobra for the `connect4` CLI | Accepted |
 | [011](011-htmx-for-frontend.md) | htmx for the Browser UI | Accepted |
 | [012](012-tailwind-css.md) | Tailwind CSS for Styling | Accepted |
+| [013](013-self-issued-agent-api-keys.md) | Self-Issued API Keys for Agent Credentials | Accepted |
 
 ## Authoring
 
