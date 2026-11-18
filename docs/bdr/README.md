@@ -26,7 +26,7 @@ are covered by BDR-006, BDR-011 and BDR-018.
 | [004](004-list-games.md) | List Visible Games | Accepted |
 | [005](005-submit-legal-move.md) | Submit a Legal Move | Accepted |
 | [006](006-reject-invalid-move.md) | Reject Invalid Moves Without Changing State | Accepted |
-| [007](007-enforce-turn-and-membership.md) | Enforce Turn Order and Player Membership | Proposed |
+| [007](007-enforce-turn-and-membership.md) | Enforce Turn Order and Player Membership | Accepted |
 | [008](008-detect-win.md) | Detect a Win and End the Game | Accepted |
 | [009](009-detect-draw.md) | Detect a Draw | Accepted |
 | [010](010-resign-game.md) | Resign a Game | Proposed |
