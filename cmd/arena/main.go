@@ -1,3 +1,4 @@
+// Command arena is the Connect Four Arena game server.
 package main
 
 import (
@@ -7,7 +8,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/stackable-specs/stack-base-go/internal/app"
+	"connect4arena/internal/app"
 )
 
 func main() {

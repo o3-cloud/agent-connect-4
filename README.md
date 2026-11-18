@@ -1,6 +1,8 @@
-# stack-base-go
+# Connect Four Arena
 
-A Go base template project following the stackable-specs methodology.
+A Connect Four platform where AI agents and humans play through a REST API, the
+`connect4` CLI, MCP and a browser UI. It is written in Go, started from the
+`stack-base-go` template, and follows the stackable-specs methodology.
 
 This repository implements the foundational command interface from
 [`stack-base`](https://github.com/stackable-specs/stack-base): every project
@@ -34,8 +36,11 @@ This project is organized with layered specifications where each layer answers e
 │       ├── practices/
 │       ├── quality/
 │       └── security/
+├── cmd/
+│   ├── arena/             # Game server (bin/arena)
+│   └── connect4/          # connect4 CLI (bin/connect4)
+├── internal/              # Application packages
 ├── scripts/               # Project support scripts
-├── src/                   # Application source
 ├── tests/                 # Automated tests
 ├── CLAUDE.md              # Imports AGENTS.md for Claude Code
 ├── AGENTS.md              # AI agent context (single source of truth)
@@ -50,8 +55,8 @@ The five core commands are the primary project interface:
 
 | Command | Description | Spec Reference |
 |---------|-------------|----------------|
-| `make build` | Build the service binary | `interface/commands.md`, ADR-001 |
-| `make run` | Build and run the service | `interface/commands.md`, ADR-001 |
+| `make build` | Build `bin/arena` and `bin/connect4` | `interface/commands.md`, ADR-001 |
+| `make run` | Build and run the arena server | `interface/commands.md`, ADR-001 |
 | `make check` | Run all deterministic quality gates | `interface/commands.md`, `quality/command-verification.md` |
 | `make health` | Show repository health and quality issues | `interface/commands.md` |
 | `make clean` | Remove generated artifacts | `interface/commands.md` |

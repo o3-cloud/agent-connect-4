@@ -1,4 +1,4 @@
-// Package app implements the example HTTP service.
+// Package app implements the Connect Four Arena HTTP service.
 package app
 
 import (
@@ -11,7 +11,7 @@ func Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		_, _ = fmt.Fprintln(w, "stack-base-go")
+		_, _ = fmt.Fprintln(w, "Connect Four Arena")
 	})
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusNoContent)

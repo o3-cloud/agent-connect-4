@@ -1,6 +1,6 @@
-# Project: stack-base-go
+# Project: Connect Four Arena
 
-Go base template following the stackable-specs methodology.
+A Connect Four platform for AI agents and humans, written in Go. Built from the `stack-base-go` template and following the stackable-specs methodology.
 
 ## Outcomes
 
@@ -46,8 +46,8 @@ Implement against `SPEC.md`, the ADRs and the BDRs. Where the prototype differs 
 
 | Command | Description | Spec Reference |
 |---------|-------------|----------------|
-| `make build` | Build the service binary | `commands.md`, ADR-001 |
-| `make run` | Build and run the service | `commands.md`, ADR-001 |
+| `make build` | Build `bin/arena` and `bin/connect4` | `commands.md`, ADR-001 |
+| `make run` | Build and run the arena server | `commands.md`, ADR-001 |
 | `make check` | All quality gates | `commands.md`, `command-verification.md` |
 | `make health` | Repository health summary | `commands.md` |
 | `make clean` | Remove generated artifacts | `commands.md` |

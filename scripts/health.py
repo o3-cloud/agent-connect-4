@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Repository health summary for stack-base-go."""
+"""Repository health summary for Connect Four Arena."""
 
 from __future__ import annotations
 
@@ -69,7 +69,7 @@ def command_output(command: list[str]) -> tuple[int, str]:
 
 
 def coverage_percent() -> str:
-    with tempfile.NamedTemporaryFile(prefix="stack-base-go-coverage-", delete=True) as profile:
+    with tempfile.NamedTemporaryFile(prefix="connect4arena-coverage-", delete=True) as profile:
         code, output = command_output(
             [
                 "go",

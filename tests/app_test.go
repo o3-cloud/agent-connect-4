@@ -5,7 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/stackable-specs/stack-base-go/internal/app"
+	"connect4arena/internal/app"
 )
 
 func TestHandlerReturnsExpectedResponse(t *testing.T) {
@@ -15,7 +15,7 @@ func TestHandlerReturnsExpectedResponse(t *testing.T) {
 		statusCode int
 		body       string
 	}{
-		{name: "returns service name", path: "/", statusCode: http.StatusOK, body: "stack-base-go\n"},
+		{name: "returns service name", path: "/", statusCode: http.StatusOK, body: "Connect Four Arena\n"},
 		{name: "returns healthy status", path: "/healthz", statusCode: http.StatusNoContent},
 		{name: "rejects unknown path", path: "/unknown", statusCode: http.StatusNotFound, body: "404 page not found\n"},
 		{name: "rejects unknown api path", path: "/api/v1/games", statusCode: http.StatusNotFound, body: "404 page not found\n"},

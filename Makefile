@@ -1,4 +1,5 @@
-APP := bin/app
+ARENA := bin/arena
+CLI := bin/connect4
 COVERAGE_FILE := coverage.out
 COVERAGE_THRESHOLD := 80
 GO_PACKAGES := ./...
@@ -10,8 +11,8 @@ PYTHON ?= python3
 
 help: ## Show available commands
 	@echo "Core commands:"
-	@echo "  make build    Build the service binary"
-	@echo "  make run      Run the service"
+	@echo "  make build    Build the arena server and connect4 CLI"
+	@echo "  make run      Run the arena server"
 	@echo "  make check    Run all local quality gates"
 	@echo "  make health   Show repository health"
 	@echo "  make clean    Remove generated artifacts"
@@ -19,13 +20,14 @@ help: ## Show available commands
 	@echo "Utility commands:"
 	@awk 'BEGIN {FS = ":.*## "}; /^[a-zA-Z_-]+:.*## / && $$1 !~ /^(help|build|run|check|health|clean)$$/ {printf "  make %-12s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
-build: ## Core: build the service binary (spec: interface/commands.md)
-	@CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o $(APP) ./src
+build: ## Core: build the arena server and connect4 CLI (spec: interface/commands.md)
+	@CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o $(ARENA) ./cmd/arena
+	@CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o $(CLI) ./cmd/connect4
 	@echo "Project is ready to run."
 
-run: build ## Core: run the service (spec: interface/commands.md)
+run: build ## Core: run the arena server (spec: interface/commands.md)
 	@echo "Project is running."
-	@./$(APP)
+	@./$(ARENA)
 
 check: fmt-check vet lint test coverage vuln ## Core: run all local quality gates (spec: interface/commands.md)
 	@echo "PASS"
@@ -75,7 +77,7 @@ vuln: ## Scan dependencies for known vulnerabilities
 	govulncheck $(GO_PACKAGES)
 
 docker-build: ## Build the production container with BuildKit
-	DOCKER_BUILDKIT=1 docker build --tag stack-base-go:local .
+	DOCKER_BUILDKIT=1 docker build --tag connect4arena:local .
 
 compose-config: ## Validate Compose configuration
 	docker compose config --quiet
