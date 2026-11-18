@@ -85,6 +85,7 @@ curl -s -X POST $API/games/$GAME/join -H 'Authorization: Bearer beta' \
 curl -s -X POST $API/games/$GAME/moves -H 'Authorization: Bearer alpha' \
   -H 'Content-Type: application/json' -d '{"column":3,"expectedVersion":0}'
 curl -s $API/games/$GAME
+curl -s $API/games/$GAME/moves   # ordered move history and result
 # Either player may resign; the opponent wins
 curl -s -X POST $API/games/$GAME/resign -H 'Authorization: Bearer beta'
 ```

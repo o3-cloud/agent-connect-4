@@ -85,6 +85,15 @@ func Register(mux *http.ServeMux, service *game.Service, registry *identity.Regi
 	}, h.get)
 
 	huma.Register(api, huma.Operation{
+		OperationID: "getGameHistory",
+		Method:      http.MethodGet,
+		Path:        Prefix + "/games/{gameId}/moves",
+		Summary:     "Get move history",
+		Description: "Returns the accepted moves in order, numbered from 1, and the result once the game is over (API-006, MCP-007). Rejected moves never appear.",
+		Errors:      []int{http.StatusNotFound},
+	}, h.history)
+
+	huma.Register(api, huma.Operation{
 		OperationID: "joinGame",
 		Method:      http.MethodPost,
 		Path:        Prefix + "/games/{gameId}/join",
@@ -211,6 +220,28 @@ func (h handlers) get(_ context.Context, in *gameIDInput) (*gameOutput, error) {
 	return &gameOutput{Body: viewOf(g)}, nil
 }
 
+type historyOutput struct {
+	Body HistoryView
+}
+
+func (h handlers) history(_ context.Context, in *gameIDInput) (*historyOutput, error) {
+	g, err := h.service.Get(in.GameID)
+	if err != nil {
+		return nil, fromError(err)
+	}
+	view := viewOf(g)
+	return &historyOutput{Body: HistoryView{
+		GameID:       view.GameID,
+		Mode:         view.Mode,
+		Status:       view.Status,
+		Players:      view.Players,
+		Moves:        view.Moves,
+		Winner:       view.Winner,
+		ResultReason: view.ResultReason,
+		Version:      view.Version,
+	}}, nil
+}
+
 type joinInput struct {
 	Authorization string `header:"Authorization" doc:"Bearer credentials: Authorization: Bearer <token>"`
 	GameID        string `path:"gameId" maxLength:"64" doc:"Game identifier"`
@@ -327,6 +358,18 @@ type GameView struct {
 	Moves        []MoveView  `json:"moves"`
 	CreatedAt    time.Time   `json:"createdAt"`
 	UpdatedAt    time.Time   `json:"updatedAt"`
+}
+
+// HistoryView is a game's ordered move history and result (API-006).
+type HistoryView struct {
+	GameID       string      `json:"gameId"`
+	Mode         string      `json:"mode" enum:"human_vs_agent,agent_vs_agent"`
+	Status       string      `json:"status" enum:"waiting,in_progress,completed"`
+	Players      PlayersView `json:"players"`
+	Moves        []MoveView  `json:"moves" doc:"Accepted moves in order; moveNumber starts at 1 with no gaps"`
+	Winner       *string     `json:"winner" doc:"red, yellow, or null until the game is over"`
+	ResultReason *string     `json:"resultReason" doc:"connect_four, draw, resignation, or null until the game is over"`
+	Version      int         `json:"version" doc:"State version the history reflects"`
 }
 
 // MoveResponse is the result of an accepted move (SPEC.md §16 "Submit Move").
