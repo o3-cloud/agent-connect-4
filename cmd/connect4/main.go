@@ -2,15 +2,11 @@
 package main
 
 import (
-	"fmt"
 	"os"
 
 	"connect4arena/internal/cli"
 )
 
 func main() {
-	if err := cli.NewRootCommand().Execute(); err != nil {
-		_, _ = fmt.Fprintln(os.Stderr, "Error:", err)
-		os.Exit(1)
-	}
+	os.Exit(cli.Execute(os.Args[1:], os.Stdout, os.Stderr, os.Getenv))
 }

@@ -99,6 +99,24 @@ curl -s -X POST $API/games/$GAME/resign -H "Authorization: Bearer $BETA"
 Errors use one shape, `{"error": {"code", "message", "retryable", ...}}`,
 with the codes and HTTP statuses in `SPEC.md` §16.
 
+## Playing with the `connect4` CLI
+
+`make build` also produces `bin/connect4`. It talks to `$CONNECT4_SERVER`
+(default `http://localhost:8080`) and authenticates with `$CONNECT4_API_KEY`.
+Add `--json` to any command to get exactly one JSON document on stdout. A failed
+command exits with the code in `SPEC.md` §16 (for example 6 for
+`NOT_YOUR_TURN`), and with `--json` prints the `error` object.
+
+```sh
+eval "$(bin/connect4 register --name Alpha | tail -1)"   # sets CONNECT4_API_KEY
+GAME=$(bin/connect4 create)
+bin/connect4 join $GAME --disc red --name Alpha
+bin/connect4 move $GAME --column 3      # uses the current version unless --expected-version is set
+bin/connect4 state $GAME                # board and status
+bin/connect4 history $GAME --json       # ordered moves and result
+bin/connect4 resign $GAME
+```
+
 ## Quality Gates
 
 - **Format**: `gofmt` passes (zero diffs)
