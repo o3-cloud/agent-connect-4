@@ -18,7 +18,6 @@ func TestHandlerReturnsExpectedResponse(t *testing.T) {
 		{name: "returns service name", path: "/", statusCode: http.StatusOK, body: "Connect Four Arena\n"},
 		{name: "returns healthy status", path: "/healthz", statusCode: http.StatusNoContent},
 		{name: "rejects unknown path", path: "/unknown", statusCode: http.StatusNotFound, body: "404 page not found\n"},
-		{name: "rejects unknown api path", path: "/api/v1/games", statusCode: http.StatusNotFound, body: "404 page not found\n"},
 		{name: "rejects unknown mcp path", path: "/mcp", statusCode: http.StatusNotFound, body: "404 page not found\n"},
 	}
 

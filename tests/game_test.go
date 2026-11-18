@@ -16,7 +16,7 @@ const (
 	carol = "player_carol"
 )
 
-func wantCode(t *testing.T, err error, code game.Code) *game.Error {
+func wantCode(t *testing.T, err error, code game.Code) game.Error {
 	t.Helper()
 	var gameErr *game.Error
 	if !errors.As(err, &gameErr) {
@@ -25,7 +25,7 @@ func wantCode(t *testing.T, err error, code game.Code) *game.Error {
 	if gameErr.Code != code {
 		t.Fatalf("error code = %s (%s), want %s", gameErr.Code, gameErr.Message, code)
 	}
-	return gameErr
+	return *gameErr
 }
 
 // startedGame returns a service and an in-progress game with alice as red and bob as yellow.

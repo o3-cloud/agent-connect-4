@@ -64,6 +64,32 @@ The five core commands are the primary project interface:
 Utility targets such as `make test`, `make lint`, `make fmt`, `make vet`,
 `make coverage`, and `make vuln` support `make check`.
 
+## Playing over the REST API
+
+`make run` starts the arena on port 8080 (set `PORT` to change it). The API
+lives under `/api/v1`, and its OpenAPI document is at `/api/v1/openapi.json`.
+Games are held in memory for now, so they are lost when the server stops.
+
+Send credentials as `Authorization: Bearer <token>`. Until real credentials
+arrive (BDR-013), any non-empty token is a test identity, and each distinct
+token is a different player.
+
+```sh
+API=http://localhost:8080/api/v1
+GAME=$(curl -s -X POST $API/games -H 'Authorization: Bearer alpha' \
+  -H 'Content-Type: application/json' -d '{"mode":"agent_vs_agent"}' | jq -r .gameId)
+curl -s -X POST $API/games/$GAME/join -H 'Authorization: Bearer alpha' \
+  -H 'Content-Type: application/json' -d '{"disc":"red","displayName":"Alpha","type":"agent"}'
+curl -s -X POST $API/games/$GAME/join -H 'Authorization: Bearer beta' \
+  -H 'Content-Type: application/json' -d '{"disc":"yellow","displayName":"Beta","type":"agent"}'
+curl -s -X POST $API/games/$GAME/moves -H 'Authorization: Bearer alpha' \
+  -H 'Content-Type: application/json' -d '{"column":3,"expectedVersion":0}'
+curl -s $API/games/$GAME
+```
+
+Errors use one shape, `{"error": {"code", "message", "retryable", ...}}`,
+with the codes and HTTP statuses in `SPEC.md` §16.
+
 ## Quality Gates
 
 - **Format**: `gofmt` passes (zero diffs)
