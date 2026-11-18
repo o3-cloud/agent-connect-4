@@ -38,7 +38,7 @@ are covered by BDR-006, BDR-011 and BDR-018.
 | [016](016-move-history.md) | Ordered Move History | Proposed |
 | [017](017-replay-completed-game.md) | Replay a Completed Game Deterministically | Proposed |
 | [018](018-survive-server-restart.md) | Preserve Games Across Server Restarts | Proposed |
-| [019](019-cli-play-and-json-output.md) | Play Through the `connect4` CLI With Machine-Readable Output | Proposed |
+| [019](019-cli-play-and-json-output.md) | Play Through the `connect4` CLI With Machine-Readable Output | Accepted |
 | [020](020-cli-watch-game.md) | Watch a Game From the CLI | Proposed |
 | [021](021-mcp-tools.md) | Play Through MCP Tools | Proposed |
 | [022](022-self-describing-interfaces.md) | Agents Can Discover How to Play | Proposed |
