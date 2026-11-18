@@ -6,8 +6,7 @@ package api
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
+	"errors"
 	"net/http"
 	"time"
 
@@ -16,6 +15,7 @@ import (
 
 	"connect4arena/internal/engine"
 	"connect4arena/internal/game"
+	"connect4arena/internal/identity"
 )
 
 // Prefix is the base path of the versioned API.
@@ -27,22 +27,33 @@ func init() {
 }
 
 // Register adds the API operations, the OpenAPI document and a structured
-// ROUTE_NOT_FOUND fallback for unknown /api/v1 paths to mux.
-func Register(mux *http.ServeMux, service *game.Service) {
+// ROUTE_NOT_FOUND fallback for unknown /api/v1 paths to mux. Players
+// authenticate with API keys issued by registry (ADR-013).
+func Register(mux *http.ServeMux, service *game.Service, registry *identity.Registry) {
 	config := huma.DefaultConfig("Connect Four Arena API", "1.0.0")
 	config.OpenAPIPath = Prefix + "/openapi"
 	config.DocsPath = Prefix + "/docs"
 	config.SchemasPath = Prefix + "/schemas"
 	config.CreateHooks = nil // no $schema links in response bodies
 	config.Components.SecuritySchemes = map[string]*huma.SecurityScheme{
-		"bearer": {Type: "http", Scheme: "bearer", Description: "Any non-empty token is a test identity until BDR-013."},
+		"bearer": {Type: "http", Scheme: "bearer", Description: "An API key from `POST /api/v1/agents` (ADR-013)."},
 	}
 	api := humago.New(mux, config)
 	api.UseMiddleware(func(ctx huma.Context, next func(huma.Context)) {
 		next(huma.WithValue(ctx, serviceKey{}, service))
 	})
-	h := handlers{service: service}
+	h := handlers{service: service, registry: registry}
 	authed := []map[string][]string{{"bearer": {}}}
+
+	huma.Register(api, huma.Operation{
+		OperationID:   "registerAgent",
+		Method:        http.MethodPost,
+		Path:          Prefix + "/agents",
+		Summary:       "Register an agent",
+		Description:   "Creates a player identity and returns its API key. The key is shown only in this response; send it as `Authorization: Bearer <apiKey>` on every game operation (API-009, ADR-013).",
+		DefaultStatus: http.StatusCreated,
+		Errors:        []int{http.StatusBadRequest},
+	}, h.register)
 
 	huma.Register(api, huma.Operation{
 		OperationID:   "createGame",
@@ -110,7 +121,37 @@ func Register(mux *http.ServeMux, service *game.Service) {
 }
 
 type handlers struct {
-	service *game.Service
+	service  *game.Service
+	registry *identity.Registry
+}
+
+type registerInput struct {
+	Body struct {
+		DisplayName string `json:"displayName" minLength:"1" maxLength:"64" doc:"Name shown to other players"`
+		Type        string `json:"type" enum:"human,agent" doc:"Whether the player is a human or an agent"`
+	}
+}
+
+// RegisteredAgent is a new identity and its one-time API key.
+type RegisteredAgent struct {
+	AgentID     string `json:"agentId" doc:"The player id that games show for this identity"`
+	DisplayName string `json:"displayName"`
+	Type        string `json:"type" enum:"human,agent"`
+	APIKey      string `json:"apiKey" doc:"Secret credential; returned only in this response"`
+}
+
+type registerOutput struct {
+	Body RegisteredAgent
+}
+
+func (h handlers) register(_ context.Context, in *registerInput) (*registerOutput, error) {
+	agent, key, err := h.registry.Register(in.Body.DisplayName, in.Body.Type)
+	if errors.Is(err, identity.ErrInvalidAgent) {
+		return nil, newErrorResponse(game.CodeInvalidArgument, err.Error())
+	}
+	return &registerOutput{Body: RegisteredAgent{
+		AgentID: agent.ID, DisplayName: agent.DisplayName, Type: agent.Type, APIKey: key,
+	}}, nil
 }
 
 type gameIDInput struct {
@@ -129,7 +170,7 @@ type createInput struct {
 }
 
 func (h handlers) create(_ context.Context, in *createInput) (*gameOutput, error) {
-	if _, err := playerID(in.Authorization); err != nil {
+	if _, err := h.playerID(in.Authorization); err != nil {
 		return nil, err
 	}
 	created, err := h.service.Create(game.Mode(in.Body.Mode))
@@ -181,7 +222,7 @@ type joinInput struct {
 }
 
 func (h handlers) join(_ context.Context, in *joinInput) (*gameOutput, error) {
-	id, err := playerID(in.Authorization)
+	id, err := h.playerID(in.Authorization)
 	if err != nil {
 		return nil, err
 	}
@@ -207,7 +248,7 @@ type moveOutput struct {
 }
 
 func (h handlers) move(_ context.Context, in *moveInput) (*moveOutput, error) {
-	id, err := playerID(in.Authorization)
+	id, err := h.playerID(in.Authorization)
 	if err != nil {
 		return nil, err
 	}
@@ -233,7 +274,7 @@ type resignInput struct {
 }
 
 func (h handlers) resign(_ context.Context, in *resignInput) (*gameOutput, error) {
-	id, err := playerID(in.Authorization)
+	id, err := h.playerID(in.Authorization)
 	if err != nil {
 		return nil, err
 	}
@@ -367,9 +408,4 @@ func reasonOrNull(r game.ResultReason) *string {
 	}
 	s := string(r)
 	return &s
-}
-
-func identityFor(token string) string {
-	sum := sha256.Sum256([]byte(token))
-	return "player_" + hex.EncodeToString(sum[:8])
 }

@@ -116,11 +116,25 @@ func newArena(t *testing.T) *arena {
 	server := newServer(t)
 	return &arena{
 		server: server,
-		red:    client{t: t, server: server, token: "token-alpha"},
-		yellow: client{t: t, server: server, token: "token-beta"},
-		other:  client{t: t, server: server, token: "token-gamma"},
+		red:    register(t, server, "Alpha"),
+		yellow: register(t, server, "Beta"),
+		other:  register(t, server, "Gamma"),
 		anon:   client{t: t, server: server},
 	}
+}
+
+// register issues an API key through POST /api/v1/agents (ADR-013) and
+// returns a client that authenticates with it.
+func register(t *testing.T, server *httptest.Server, name string) client {
+	t.Helper()
+	anon := client{t: t, server: server}
+	issued := anon.do(http.MethodPost, "/api/v1/agents", map[string]any{"displayName": name, "type": "agent"}).
+		wantStatus(t, http.StatusCreated)
+	key, _ := issued.body["apiKey"].(string)
+	if !strings.HasPrefix(key, "c4_") {
+		t.Fatalf("apiKey = %q, want a c4_ key; body: %s", key, issued.raw)
+	}
+	return client{t: t, server: server, token: key}
 }
 
 func (a *arena) create(t *testing.T) string {
@@ -267,8 +281,8 @@ func TestAPIJoinAndStartGame(t *testing.T) {
 	if red["displayName"] != "Alpha" || red["disc"] != "red" || red["type"] != "agent" {
 		t.Fatalf("red player = %v", red)
 	}
-	if id, _ := red["id"].(string); !strings.HasPrefix(id, "player_") || strings.Contains(id, a.red.token) {
-		t.Fatalf("red player id = %q; want a derived id that does not reveal the credential", id)
+	if id, _ := red["id"].(string); !strings.HasPrefix(id, "agt_") || strings.Contains(id, a.red.token) {
+		t.Fatalf("red player id = %q; want the registered agent id, which does not reveal the credential", id)
 	}
 	if state["status"] != "waiting" || state["currentTurn"] != nil {
 		t.Fatalf("waiting game state: status %v turn %v", state["status"], state["currentTurn"])

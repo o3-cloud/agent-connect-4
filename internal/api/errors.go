@@ -163,14 +163,19 @@ func writeError(w http.ResponseWriter, resp *ErrorResponse) {
 	_ = json.NewEncoder(w).Encode(resp)
 }
 
-// playerID derives a stable, non-secret player identifier from a bearer token.
-// For the walking skeleton any non-empty token is a valid test identity;
-// real credential checks arrive with BDR-013.
-func playerID(authorization string) (string, error) {
+// playerID returns the agent id bound to the request's API key (ADR-013,
+// SEC-004). A missing, malformed or unrecognised key is UNAUTHENTICATED.
+func (h handlers) playerID(authorization string) (string, error) {
 	const prefix = "Bearer "
 	token := strings.TrimSpace(strings.TrimPrefix(authorization, prefix))
 	if !strings.HasPrefix(authorization, prefix) || token == "" {
-		return "", newErrorResponse(game.CodeUnauthenticated, "send credentials as an Authorization: Bearer <token> header")
+		return "", newErrorResponse(game.CodeUnauthenticated,
+			"send an API key as an Authorization: Bearer <apiKey> header; get one from POST "+Prefix+"/agents")
 	}
-	return identityFor(token), nil
+	agent, ok := h.registry.Authenticate(token)
+	if !ok {
+		return "", newErrorResponse(game.CodeUnauthenticated,
+			"the API key is not recognised; get one from POST "+Prefix+"/agents")
+	}
+	return agent.ID, nil
 }
