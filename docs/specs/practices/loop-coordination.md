@@ -25,7 +25,7 @@ Several Claude Code sessions run scheduled loops against this repository at the 
 2. Give each registry entry these fields: `loop` (name), `session` (Claude Code session id), `role`, `job` (cron id), `minute` (minute past the hour it starts), `cadence`, `expires` (ISO date and time the job expires; session cron jobs expire 7 days after creation), `worktree` (path, or empty for a loop that does not write to the repository), `writes` (folders it writes to), and `sources` (the `source:` value on mailbox issues it files).
 3. Update your own entry when your job, minute, worktree or expiry changes. Edit only your own entry.
 4. Remove your entry when you stop your loop.
-5. Start each loop at its own minute. Loops that write the same folder must start at least 10 minutes apart. Record the minute the job actually fires, as `CronList` reports it: the scheduler adds a fixed offset to the cron minute. The reserved slots are :07 and :17 for verify and fix, :47 for improvement, and :53 for the progress dashboard.
+5. Start each loop at its own minute. Loops that write the same folder must start at least 10 minutes apart, unless both claim items before changing them (rules 6–8) and change tracked files only in their own worktrees (rule 9); claims and worktrees already prevent their writes from colliding. Record the minute the job actually fires, as `CronList` reports it: the scheduler adds a fixed offset to the cron minute. The reserved slots are :07 and :17 for verify and fix, :47 for improvement, and :53 for the progress dashboard.
 
 ### Claims
 
