@@ -29,7 +29,7 @@ are covered by BDR-006, BDR-011 and BDR-018.
 | [007](007-enforce-turn-and-membership.md) | Enforce Turn Order and Player Membership | Accepted |
 | [008](008-detect-win.md) | Detect a Win and End the Game | Accepted |
 | [009](009-detect-draw.md) | Detect a Draw | Accepted |
-| [010](010-resign-game.md) | Resign a Game | Proposed |
+| [010](010-resign-game.md) | Resign a Game | Accepted |
 | [011](011-reject-stale-and-concurrent-moves.md) | Reject Stale and Concurrent Moves | Proposed |
 | [012](012-idempotent-move-retry.md) | Idempotent Move Retries | Proposed |
 | [013](013-authenticate-agent-operations.md) | Authenticate Agent Operations and Protect Credentials | Proposed |
