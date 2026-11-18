@@ -20,15 +20,15 @@ are covered by BDR-006, BDR-011 and BDR-018.
 
 | BDR | Title | Status |
 | --- | ----- | ------ |
-| [001](001-create-game.md) | Create a Game | Proposed |
-| [002](002-join-and-start-game.md) | Join a Game and Start Play | Proposed |
-| [003](003-read-game-state.md) | Read Authoritative Game State | Proposed |
-| [004](004-list-games.md) | List Visible Games | Proposed |
-| [005](005-submit-legal-move.md) | Submit a Legal Move | Proposed |
-| [006](006-reject-invalid-move.md) | Reject Invalid Moves Without Changing State | Proposed |
+| [001](001-create-game.md) | Create a Game | Accepted |
+| [002](002-join-and-start-game.md) | Join a Game and Start Play | Accepted |
+| [003](003-read-game-state.md) | Read Authoritative Game State | Accepted |
+| [004](004-list-games.md) | List Visible Games | Accepted |
+| [005](005-submit-legal-move.md) | Submit a Legal Move | Accepted |
+| [006](006-reject-invalid-move.md) | Reject Invalid Moves Without Changing State | Accepted |
 | [007](007-enforce-turn-and-membership.md) | Enforce Turn Order and Player Membership | Proposed |
-| [008](008-detect-win.md) | Detect a Win and End the Game | Proposed |
-| [009](009-detect-draw.md) | Detect a Draw | Proposed |
+| [008](008-detect-win.md) | Detect a Win and End the Game | Accepted |
+| [009](009-detect-draw.md) | Detect a Draw | Accepted |
 | [010](010-resign-game.md) | Resign a Game | Proposed |
 | [011](011-reject-stale-and-concurrent-moves.md) | Reject Stale and Concurrent Moves | Proposed |
 | [012](012-idempotent-move-retry.md) | Idempotent Move Retries | Proposed |
