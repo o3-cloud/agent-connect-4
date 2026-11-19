@@ -65,3 +65,42 @@ func TestREADMECLIWalkthroughRuns(t *testing.T) {
 		t.Fatalf("the walkthrough game did not end completed; output:\n%s", out)
 	}
 }
+
+var serverSetting = regexp.MustCompile(`[Gg]etenv\("([A-Z0-9_]+)"\)`)
+
+// BDR-033 AC-1: the image starts "with documented environment variables".
+// Every setting the arena server reads from its environment has a row in the
+// README's container section, and the section shows how to pass it.
+func TestREADMEDocumentsEveryServerSetting(t *testing.T) {
+	section := readmeSection(t, "## Running in a container")
+	if !strings.Contains(section, "docker run") || !strings.Contains(section, " -e ") {
+		t.Error("the container section does not show a docker run command that passes settings with -e")
+	}
+	var settings []string
+	for _, dir := range []string{"../cmd/arena", "../internal/app"} {
+		files, err := filepath.Glob(filepath.Join(dir, "*.go"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, file := range files {
+			if strings.HasSuffix(file, "_test.go") {
+				continue
+			}
+			source, err := os.ReadFile(file)
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, m := range serverSetting.FindAllStringSubmatch(string(source), -1) {
+				settings = append(settings, m[1])
+			}
+		}
+	}
+	if len(settings) == 0 {
+		t.Fatal("found no server settings; the scan is broken")
+	}
+	for _, name := range settings {
+		if !strings.Contains(section, "| `"+name+"` |") {
+			t.Errorf("README container section has no table row for %s", name)
+		}
+	}
+}

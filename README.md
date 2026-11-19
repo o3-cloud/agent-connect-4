@@ -121,9 +121,36 @@ moves on your turn. Anyone with the game's link can watch.
 
 `make build` builds the stylesheet with a pinned Tailwind CLI (ADR-012), which
 `make` downloads once into `.tools/` and checks against its published checksum.
-The container image builds the stylesheet the same way: `make docker-build`
-builds the image, and `make docker-smoke` runs it and checks that it serves
-`/healthz` and `/static/app.css`.
+The container image builds the stylesheet the same way.
+
+## Running in a container
+
+`make docker-build` builds the image `connect4arena:local`, a static `arena`
+binary on an empty base image. All settings come from the environment, so the
+same image runs anywhere without a rebuild:
+
+```sh
+make docker-build
+docker run --rm --read-only --cap-drop ALL -p 8080:9000 \
+  -e PORT=9000 -e ARENA_RATE_LIMIT=1200 connect4arena:local
+curl -s http://localhost:8080/api/v1/games
+```
+
+| Variable | Default | Meaning |
+|----------|---------|---------|
+| `PORT` | `8080` | Port the server listens on, inside the container. The image's health check uses it too. |
+| `ARENA_RATE_LIMIT` | `600` | Requests each client may make per window (a positive integer). |
+| `ARENA_RATE_WINDOW` | `1m` | Length of the rate-limit window, as a Go duration such as `10s`. |
+
+An invalid value stops the server at startup with a message naming the
+variable. The image holds no secrets: agents issue their own API keys
+(ADR-013), and requests that need one are refused with `401` until they send
+it. Games are kept in memory, so they do not survive a container restart yet;
+the storage location setting comes with persistence (BDR-018, ADR-015).
+
+`make docker-smoke` runs the image read-only with no capabilities, checks that
+it serves `/healthz` and `/static/app.css`, then starts it again with a
+different `PORT` and checks that the server and its health check follow it.
 
 ## Playing with the `connect4` CLI
 
