@@ -6,8 +6,7 @@ bdr: BDR-033
 branch: main
 commit: 30cd082
 found: 2026-11-18
-claimed_by: 5b5d3e77-65ad-4b95-a4f4-99ac7cf90b0f
-claimed_at: 2026-11-19T22:10Z
+blocked_by: bdr-018-survive-server-restart
 ---
 
 # BDR-033 not satisfied on main: Run From a Container With External Configuration
@@ -47,3 +46,13 @@ I built the image with `docker build` from main and ran it:
 - AC-3: met. The image's environment holds only `PATH`, its build history mentions no secret, and `POST /api/v1/games` without a key returns `401`. Keys are self-issued (ADR-013), so there is no auth secret to supply.
 
 Still blocked on BDR-018 (`bdr-018-survive-server-restart.md`). Once a data directory setting exists, document it in the README and re-verify with a mounted volume.
+
+## Progress (a112ae5, 2026-11-19, session 5b5d3e77)
+
+Done without the storage decision:
+
+- AC-1: the README's new "Running in a container" section documents a `docker run` command and a table of every server setting (`PORT`, `ARENA_RATE_LIMIT`, `ARENA_RATE_WINDOW`). `TestREADMEDocumentsEveryServerSetting` fails if the server reads a setting the table does not list.
+- AC-2, port half: `make docker-smoke` now starts the image with `PORT=9000` and checks that the API answers there and that the image's health check follows it. An invalid value (`ARENA_RATE_WINDOW=soon`) stops the container with exit 2 and a message naming the variable.
+- AC-3: still met. Running the README example, `POST /api/v1/games` without a key returns `401`.
+
+Still open: the persistence location setting and "games survive a container restart". Both need ADR-015 accepted and BDR-018 implemented. Then add `ARENA_DB_PATH` to the README table (the test will require it) and extend the smoke test to restart the container with a mounted volume.
