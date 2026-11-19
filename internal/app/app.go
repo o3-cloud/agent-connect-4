@@ -85,7 +85,7 @@ func New(cfg Config) http.Handler {
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 	})
-	return oplog.Middleware(rateLimit(mux, ratelimit.New(cfg.RateLimit, cfg.RateWindow), registry), logger)
+	return oplog.Middleware(rateLimit(mux, ratelimit.New(cfg.RateLimit, cfg.RateWindow), registry, service), logger)
 }
 
 // rateLimit applies the limiter to API and MCP requests. A request with a
@@ -93,13 +93,16 @@ func New(cfg Config) http.Handler {
 // share a limit. Any other request, including one with a made-up key, spends
 // its IP address's budget, so rotating fake keys does not evade the limit.
 // Arena Bot calls the mux directly and is not limited.
-func rateLimit(next http.Handler, limiter *ratelimit.Limiter, registry *identity.Registry) http.Handler {
+func rateLimit(next http.Handler, limiter *ratelimit.Limiter, registry *identity.Registry, service *game.Service) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !strings.HasPrefix(r.URL.Path, api.Prefix+"/") && r.URL.Path != mcpserver.Path {
 			next.ServeHTTP(w, r)
 			return
 		}
 		if ok, retryAfter := limiter.Allow(clientOf(r, registry)); !ok {
+			if gameID, isMove := moveGameID(r); isMove {
+				service.RecordRejectedMove(gameID, playerOf(r, registry), game.CodeRateLimited)
+			}
 			api.WriteRateLimited(w, retryAfter)
 			return
 		}
@@ -107,11 +110,33 @@ func rateLimit(next http.Handler, limiter *ratelimit.Limiter, registry *identity
 	})
 }
 
-func clientOf(r *http.Request, registry *identity.Registry) string {
-	if token, ok := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer "); ok {
-		if agent, ok := registry.Authenticate(token); ok {
-			return "agent:" + agent.ID
+// moveGameID reports whether r submits a move, over REST or MCP, and to which
+// game. A rate-limited move never reaches the game service, so rateLimit logs
+// it (BDR-032 AC-1).
+func moveGameID(r *http.Request) (string, bool) {
+	if r.Method == http.MethodPost {
+		if rest, ok := strings.CutPrefix(r.URL.Path, api.Prefix+"/games/"); ok {
+			if gameID, ok := strings.CutSuffix(rest, "/moves"); ok && gameID != "" && !strings.Contains(gameID, "/") {
+				return gameID, true
+			}
 		}
+	}
+	return mcpserver.MoveGameID(r)
+}
+
+// playerOf is the agent behind r's API key, or "" if it has no valid key.
+func playerOf(r *http.Request, registry *identity.Registry) string {
+	token, ok := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer ")
+	if !ok {
+		return ""
+	}
+	agent, _ := registry.Authenticate(token)
+	return agent.ID
+}
+
+func clientOf(r *http.Request, registry *identity.Registry) string {
+	if id := playerOf(r, registry); id != "" {
+		return "agent:" + id
 	}
 	host, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {

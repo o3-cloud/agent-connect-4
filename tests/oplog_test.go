@@ -75,8 +75,14 @@ func (s *logSink) wantEvents(t *testing.T, gameID, event string, n int) []map[st
 
 func loggedArena(t *testing.T) (*arena, *logSink) {
 	t.Helper()
+	return loggedArenaWith(t, func(*app.Config) {})
+}
+
+func loggedArenaWith(t *testing.T, configure func(*app.Config)) (*arena, *logSink) {
+	t.Helper()
 	sink := &logSink{}
 	cfg := app.DefaultConfig()
+	configure(&cfg)
 	cfg.Logger = slog.New(slog.NewJSONHandler(sink, nil))
 	server := httptest.NewServer(app.New(cfg))
 	t.Cleanup(server.Close)
@@ -258,5 +264,102 @@ func TestLogLetsAbortHandlerThrough(t *testing.T) {
 	}
 	if got := sink.String(); got != "" {
 		t.Fatalf("abort was logged:\n%s", got)
+	}
+}
+
+// move-rejections-before-service-unlogged, BDR-032 AC-1: a move rejected
+// before it reaches the game service (bad credentials, request validation,
+// rate limiting) still leaves exactly one move_rejected record with its code,
+// and the record never holds the presented key (SEC-005).
+func TestLogRecordsMovesRejectedBeforeTheService(t *testing.T) {
+	a, sink := loggedArena(t)
+	a.start(t)
+	path := "/api/v1/games/" + a.gameID + "/moves"
+	const bogus = "c4_not_a_real_key_0000000000000000"
+	a.anon.do(http.MethodPost, path, map[string]any{"column": 3, "expectedVersion": 0}).
+		wantError(t, http.StatusUnauthorized, "UNAUTHENTICATED")
+	client{t: t, server: a.server, token: bogus}.do(http.MethodPost, path, map[string]any{"column": 3, "expectedVersion": 0}).
+		wantError(t, http.StatusUnauthorized, "UNAUTHENTICATED")
+	a.red.do(http.MethodPost, path, map[string]any{"column": 3}).wantError(t, http.StatusBadRequest, "INVALID_ARGUMENT")
+	a.red.do(http.MethodPost, path, map[string]any{"column": "three", "expectedVersion": 0}).
+		wantError(t, http.StatusUnprocessableEntity, "INVALID_COLUMN")
+	a.red.do(http.MethodPost, path, map[string]any{"column": 9, "expectedVersion": 0}).
+		wantError(t, http.StatusUnprocessableEntity, "INVALID_COLUMN") // reaches the service
+
+	rejected := sink.wantEvents(t, a.gameID, "move_rejected", 5)
+	for i, code := range []string{"UNAUTHENTICATED", "UNAUTHENTICATED", "INVALID_ARGUMENT", "INVALID_COLUMN", "INVALID_COLUMN"} {
+		if rejected[i]["code"] != code {
+			t.Fatalf("move_rejected[%d] = %v, want code %s", i, rejected[i], code)
+		}
+	}
+	if red := rejected[2]["playerId"]; red == nil || !strings.HasPrefix(red.(string), "agt_") {
+		t.Fatalf("an authenticated rejection should name the player: %v", rejected[2])
+	}
+	if strings.Contains(sink.String(), bogus) || strings.Contains(sink.String(), a.red.token) {
+		t.Fatal("a presented API key appears in the log")
+	}
+}
+
+func TestLogRecordsRateLimitedMoves(t *testing.T) {
+	a, sink := loggedArenaWith(t, func(cfg *app.Config) { cfg.RateLimit = 3 })
+	a.start(t) // two requests from each player
+	path := "/api/v1/games/" + a.gameID + "/moves"
+	a.red.do(http.MethodPost, path, map[string]any{"column": 3, "expectedVersion": 0}).wantStatus(t, http.StatusOK)
+	a.red.do(http.MethodPost, path, map[string]any{"column": 3, "expectedVersion": 2}).
+		wantError(t, http.StatusTooManyRequests, "RATE_LIMITED")
+
+	// The same budget covers MCP, so red's make_move over MCP is refused too.
+	call := `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"make_move","arguments":{"game_id":"` +
+		a.gameID + `","column":3,"expected_version":2,"idempotency_key":"k"}}}`
+	request, _ := http.NewRequest(http.MethodPost, a.server.URL+"/mcp", strings.NewReader(call))
+	request.Header.Set("Authorization", "Bearer "+a.red.token)
+	request.Header.Set("Content-Type", "application/json")
+	response, err := a.server.Client().Do(request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = response.Body.Close()
+	if response.StatusCode != http.StatusTooManyRequests {
+		t.Fatalf("MCP make_move over budget: HTTP %d, want 429", response.StatusCode)
+	}
+
+	rejected := sink.wantEvents(t, a.gameID, "move_rejected", 2)
+	for i := range rejected {
+		if rejected[i]["code"] != "RATE_LIMITED" || rejected[i]["playerId"] != rejected[0]["playerId"] || rejected[i]["playerId"] == nil {
+			t.Fatalf("move_rejected[%d] = %v, want RATE_LIMITED for red", i, rejected[i])
+		}
+	}
+}
+
+// Over MCP: a make_move that fails its schema check, and one sent without a
+// key, are logged once each; a rule rejection is still logged once.
+func TestLogRecordsMCPMovesRejectedBeforeTheService(t *testing.T) {
+	a, sink := loggedArena(t)
+	a.start(t)
+	session := mustConnectMCP(t, a.red)
+	wantToolError(t, session, "make_move", map[string]any{"game_id": a.gameID, "expected_version": 0}, "INVALID_ARGUMENT")
+	wantToolError(t, session, "make_move", map[string]any{"game_id": a.gameID, "column": 2.5, "expected_version": 0, "idempotency_key": "k1"}, "INVALID_COLUMN")
+	wantToolError(t, mustConnectMCP(t, a.yellow), "make_move",
+		map[string]any{"game_id": a.gameID, "column": 3, "expected_version": 0, "idempotency_key": "k2"}, "NOT_YOUR_TURN")
+
+	call := `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"make_move","arguments":{"game_id":"` +
+		a.gameID + `","column":3,"expected_version":0,"idempotency_key":"k3"}}}`
+	request, _ := http.NewRequest(http.MethodPost, a.server.URL+"/mcp", strings.NewReader(call))
+	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("Accept", "application/json, text/event-stream")
+	response, err := a.server.Client().Do(request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = response.Body.Close()
+	if response.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("make_move without a key: HTTP %d, want 401", response.StatusCode)
+	}
+
+	rejected := sink.wantEvents(t, a.gameID, "move_rejected", 4)
+	for i, code := range []string{"INVALID_ARGUMENT", "INVALID_COLUMN", "NOT_YOUR_TURN", "UNAUTHENTICATED"} {
+		if rejected[i]["code"] != code {
+			t.Fatalf("move_rejected[%d] = %v, want code %s", i, rejected[i], code)
+		}
 	}
 }

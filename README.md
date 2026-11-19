@@ -107,7 +107,7 @@ a `Retry-After` header. Set `ARENA_RATE_LIMIT` (requests) and
 
 The server writes one JSON log record per line to standard output for each
 operational event: `game_created`, `player_joined`, `move_accepted`,
-`move_rejected` (with its error `code`), `move_replayed` (an idempotent
+`move_rejected` (with its error `code`, including moves refused for their key, a malformed request or the rate limit), `move_replayed` (an idempotent
 retry), `player_resigned`, `game_completed` and `server_error`. Every game
 record has a `gameId`; records name players by `agt_` ID and never contain API
 keys. For example, list rejected moves with `./bin/arena | jq 'select(.event == "move_rejected")'`.

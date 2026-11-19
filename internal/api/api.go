@@ -42,7 +42,7 @@ func Register(mux *http.ServeMux, service *game.Service, registry *identity.Regi
 	}
 	api := humago.New(mux, config)
 	api.UseMiddleware(func(ctx huma.Context, next func(huma.Context)) {
-		next(huma.WithValue(ctx, serviceKey{}, service))
+		next(huma.WithValue(huma.WithValue(ctx, serviceKey{}, service), registryKey{}, registry))
 	})
 	h := handlers{service: service, registry: registry}
 	for _, opt := range opts {
@@ -338,6 +338,7 @@ type moveOutput struct {
 func (h handlers) move(_ context.Context, in *moveInput) (*moveOutput, error) {
 	id, err := h.playerID(in.Authorization)
 	if err != nil {
+		h.service.RecordRejectedMove(in.GameID, "", game.CodeUnauthenticated)
 		return nil, err
 	}
 	result, err := h.service.MoveWithKey(in.GameID, id, in.Body.Column, in.Body.ExpectedVersion, in.Body.IdempotencyKey)

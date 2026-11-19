@@ -11,6 +11,7 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 
 	"connect4arena/internal/game"
+	"connect4arena/internal/identity"
 )
 
 // httpStatus maps each SPEC.md §16 error code to its HTTP status.
@@ -138,11 +139,40 @@ func newHumaError(status int, message string, errs ...error) huma.StatusError {
 // service, so framework-generated errors can add game context.
 type serviceKey struct{}
 
-// newHumaErrorWithContext replaces huma.NewErrorWithContext. A column that
-// fails schema validation (3.5, "three") never reaches the handler, so this
-// adds the gameId and currentVersion that SPEC.md §16 requires on game-rule
-// errors, or reports GAME_NOT_FOUND when the game does not exist.
+// registryKey is the request-context key for the agent registry.
+type registryKey struct{}
+
+// newHumaErrorWithContext replaces huma.NewErrorWithContext. A move that fails
+// request validation never reaches the game service, so this logs its
+// move_rejected record (BDR-032 AC-1).
 func newHumaErrorWithContext(ctx huma.Context, status int, message string, errs ...error) huma.StatusError {
+	se := gameContextError(ctx, status, message, errs...)
+	var resp *ErrorResponse
+	if ctx == nil || ctx.Operation() == nil || ctx.Operation().OperationID != "submitMove" || !errors.As(se, &resp) {
+		return se
+	}
+	if service, ok := ctx.Context().Value(serviceKey{}).(*game.Service); ok {
+		service.RecordRejectedMove(ctx.Param("gameId"), callerID(ctx), game.Code(resp.Err.Code))
+	}
+	return se
+}
+
+// callerID is the agent behind the request's API key, or "" if it has none.
+func callerID(ctx huma.Context) string {
+	registry, ok := ctx.Context().Value(registryKey{}).(*identity.Registry)
+	token, bearer := strings.CutPrefix(ctx.Header("Authorization"), "Bearer ")
+	if !ok || !bearer {
+		return ""
+	}
+	agent, _ := registry.Authenticate(token)
+	return agent.ID
+}
+
+// gameContextError builds the error for a framework-detected failure. A column
+// that fails schema validation (3.5, "three") never reaches the handler, so
+// this adds the gameId and currentVersion that SPEC.md §16 requires on
+// game-rule errors, or reports GAME_NOT_FOUND when the game does not exist.
+func gameContextError(ctx huma.Context, status int, message string, errs ...error) huma.StatusError {
 	se := newHumaError(status, message, errs...)
 	resp, ok := se.(*ErrorResponse)
 	if !ok || ctx == nil || resp.Err.Code != string(game.CodeInvalidColumn) {

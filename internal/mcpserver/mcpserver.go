@@ -4,10 +4,13 @@
 package mcpserver
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"io"
 	"math"
 	"net/http"
+	"strings"
 
 	"github.com/google/jsonschema-go/jsonschema"
 	"github.com/modelcontextprotocol/go-sdk/auth"
@@ -37,7 +40,50 @@ func Handler(service *game.Service, registry *identity.Registry) http.Handler {
 		}
 		return &auth.TokenInfo{UserID: agent.ID, Extra: map[string]any{agentTypeKey: agent.Type}}, nil
 	}
-	return auth.RequireBearerToken(verify, &auth.RequireBearerTokenOptions{AllowMissingExpiration: true})(streamable)
+	authed := auth.RequireBearerToken(verify, &auth.RequireBearerTokenOptions{AllowMissingExpiration: true})(streamable)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// A make_move refused for its credentials never reaches the game
+		// service, so log it here (BDR-032 AC-1). The key is never logged.
+		if gameID, ok := MoveGameID(r); ok {
+			token, bearer := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer ")
+			if _, known := registry.Authenticate(token); !bearer || !known {
+				service.RecordRejectedMove(gameID, "", game.CodeUnauthenticated)
+			}
+		}
+		authed.ServeHTTP(w, r)
+	})
+}
+
+// maxPeek bounds how much of a request body MoveGameID reads.
+const maxPeek = 64 << 10
+
+// MoveGameID reports whether r is an MCP tools/call of make_move and, if so,
+// the game it names. It leaves r.Body readable from the start.
+func MoveGameID(r *http.Request) (string, bool) {
+	if r.Method != http.MethodPost || r.URL.Path != Path || r.Body == nil {
+		return "", false
+	}
+	head, err := io.ReadAll(io.LimitReader(r.Body, maxPeek))
+	r.Body = struct {
+		io.Reader
+		io.Closer
+	}{io.MultiReader(bytes.NewReader(head), r.Body), r.Body}
+	if err != nil {
+		return "", false
+	}
+	var call struct {
+		Method string `json:"method"`
+		Params struct {
+			Name      string `json:"name"`
+			Arguments struct {
+				GameID string `json:"game_id"`
+			} `json:"arguments"`
+		} `json:"params"`
+	}
+	if json.Unmarshal(head, &call) != nil || call.Method != "tools/call" || call.Params.Name != "make_move" {
+		return "", false
+	}
+	return call.Params.Arguments.GameID, true
 }
 
 // NewServer returns an MCP server with the six SPEC.md §17 game tools.
@@ -48,28 +94,28 @@ func NewServer(service *game.Service) *mcp.Server {
 	addTool(server, &mcp.Tool{
 		Name:        "create_game",
 		Description: "Create a Connect Four game. It starts in status waiting; join it with join_game.",
-	}, nil, t.createGame)
+	}, nil, nil, t.createGame)
 	addTool(server, &mcp.Tool{
 		Name:        "join_game",
 		Description: "Take the red or yellow slot in a waiting game as the authenticated agent. Red moves first; the game starts when both slots are filled.",
-	}, nil, t.joinGame)
+	}, nil, nil, t.joinGame)
 	addTool(server, &mcp.Tool{
 		Name:        "get_game_state",
 		Description: "Get a game's authoritative state: board (row 0 is the top), current turn, legal columns, players, version and result.",
-	}, nil, t.getGameState)
+	}, nil, nil, t.getGameState)
 	addTool(server, &mcp.Tool{
 		Name: "make_move",
 		Description: "Drop your disc into a column (0 to 6) on your turn. expected_version must equal the game's current version. " +
 			"Resending the same idempotency_key returns the recorded result without playing again.",
-	}, t.checkColumn, t.makeMove)
+	}, t.checkColumn, t.moveRejected, t.makeMove)
 	addTool(server, &mcp.Tool{
 		Name:        "list_games",
 		Description: "List games, optionally only those in one status (waiting, in_progress or completed).",
-	}, nil, t.listGames)
+	}, nil, nil, t.listGames)
 	addTool(server, &mcp.Tool{
 		Name:        "get_game_history",
 		Description: "Get a game's accepted moves in order and, once it is over, the winner and result reason.",
-	}, nil, t.getGameHistory)
+	}, nil, nil, t.getGameHistory)
 	return server
 }
 
@@ -114,8 +160,9 @@ type toolHandler[In any] func(ctx context.Context, req *mcp.CallToolRequest, in 
 // validates the arguments itself rather than through mcp.AddTool, so every
 // failure, schema-level or game-rule, is a tool-level error carrying the
 // same {"error": {...}} object REST returns (MCP-008, BDR-015 AC-3). check,
-// if set, runs before schema validation to give specific codes.
-func addTool[In any](server *mcp.Server, tool *mcp.Tool, check func(map[string]any) error, h toolHandler[In]) {
+// if set, runs before schema validation to give specific codes. rejected, if
+// set, hears about every failure that stops the call before h runs.
+func addTool[In any](server *mcp.Server, tool *mcp.Tool, check func(map[string]any) error, rejected rejectHook, h toolHandler[In]) {
 	schema, err := jsonschema.For[In](nil)
 	if err != nil {
 		panic("mcpserver: input schema for " + tool.Name + ": " + err.Error())
@@ -131,20 +178,26 @@ func addTool[In any](server *mcp.Server, tool *mcp.Tool, check func(map[string]a
 			raw = json.RawMessage("{}")
 		}
 		args := map[string]any{}
+		refuse := func(err error) (*mcp.CallToolResult, error) {
+			if rejected != nil {
+				rejected(req, args, err)
+			}
+			return failed(err)
+		}
 		if err := json.Unmarshal(raw, &args); err != nil {
-			return failed(invalidArgument("arguments must be a JSON object"))
+			return refuse(invalidArgument("arguments must be a JSON object"))
 		}
 		if check != nil {
 			if err := check(args); err != nil {
-				return failed(err)
+				return refuse(err)
 			}
 		}
 		if err := resolved.Validate(args); err != nil {
-			return failed(invalidArgument(err.Error()))
+			return refuse(invalidArgument(err.Error()))
 		}
 		var in In
 		if err := json.Unmarshal(raw, &in); err != nil {
-			return failed(invalidArgument(err.Error()))
+			return refuse(invalidArgument(err.Error()))
 		}
 		out, err := h(ctx, req, in)
 		if err != nil {
@@ -201,6 +254,17 @@ func (t tools) checkColumn(args map[string]any) error {
 	}
 	version := g.Version
 	return &game.Error{Code: game.CodeInvalidColumn, Message: "column must be an integer from 0 to 6", GameID: g.ID, CurrentVersion: &version}
+}
+
+// rejectHook is told about a tool call refused before its handler ran.
+type rejectHook func(req *mcp.CallToolRequest, args map[string]any, err error)
+
+// moveRejected logs a make_move refused before it reached the game service,
+// which logs every rejection it makes itself (BDR-032 AC-1).
+func (t tools) moveRejected(req *mcp.CallToolRequest, args map[string]any, err error) {
+	gameID, _ := args["game_id"].(string)
+	id, _ := caller(req)
+	t.service.RecordRejectedMove(gameID, id, game.Code(api.ErrorFor(err).Err.Code))
 }
 
 // caller returns the authenticated agent's id and type.

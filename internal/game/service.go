@@ -320,6 +320,19 @@ func (s *Service) ListByStatus(status Status) ([]Game, error) {
 	return games, nil
 }
 
+// RecordRejectedMove logs a move_rejected record for a move refused before it
+// reached the service: bad credentials, request validation or rate limiting
+// (NFR-006, BDR-032 AC-1). The service logs its own rejections in Move, so
+// callers record only refusals that never call Move. playerID is empty when
+// the caller is unauthenticated.
+func (s *Service) RecordRejectedMove(gameID, playerID string, code Code) {
+	attrs := []any{"event", EventMoveRejected, "gameId", gameID, "code", string(code)}
+	if playerID != "" {
+		attrs = append(attrs, "playerId", playerID)
+	}
+	s.log.Info("move rejected", attrs...)
+}
+
 // Move submits playerID's disc to column, provided expectedVersion matches the
 // current version (TURN-001..006, RULE-002..010).
 func (s *Service) Move(gameID, playerID string, column, expectedVersion int) (MoveResult, error) {
