@@ -1,12 +1,14 @@
 ---
 title: "A browser click is applied to the latest board, not the board the player saw (BDR-028 AC-2)"
-status: open
+status: closed
 source: bdr-verification
 type: defect
 bdr: BDR-028
 branch: main
 commit: 00884db
 found: 2026-11-19
+closed: 2026-11-19
+fixed_in: 3e11fb6
 spec: [SPEC.md TURN-*, LIVE-005]
 ---
 
@@ -44,3 +46,11 @@ A move picked from an out-of-date board is not applied. The page shows the curre
 1. Render the version into each column button, for example `hx-vals='{"expectedVersion": {{$.Version}}}'`, and have `move` pass it to `service.Move`. A stale click then gets `STALE_STATE`, and the handler re-renders the current board.
 2. Optionally, disable the buttons on `htmx:sendError` or `offline`, and re-enable them after the next successful board swap.
 3. Add a test: render at v4, advance to v6 through the service, POST a click carrying v4, and expect no new move and the v6 board.
+
+## Resolution
+
+Fixed in 3e11fb6 by session 5b5d3e77, under the claimed item [bdr-028-browser-reconnect-recovery](bdr-028-browser-reconnect-recovery.md). That work was in progress when this was filed, and it does fix options 1 to 3:
+
+1. Each column button carries `hx-vals='{"version": N}'` (the field is `version`, a form value on the browser route). `move` moves only when N is current and passes N to `service.Move`, which re-checks it atomically. A stale or missing version moves nothing and re-renders the current board with "The board changed while you were away. This is the current position."
+2. On `htmx:sendError` or `htmx:responseError`, the page shows "Reconnecting… moves are paused until the board is up to date." and disables the column buttons. The next successful board swap clears both. I verified this in Chrome by stopping and restarting a proxy in front of the arena.
+3. `TestBrowserDoesNotMoveFromAStaleBoard` renders v0, advances to v2 through the API, clicks with v0, and expects no move and the v2 board with the notice.

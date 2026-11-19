@@ -7,6 +7,7 @@ branch: main
 commit: 30cd082
 found: 2026-11-18
 closed: 2026-11-19
+fixed_in: 3e11fb6
 ---
 
 # BDR-028 not satisfied on main: Recover After a Browser Disconnect
