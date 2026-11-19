@@ -105,6 +105,13 @@ its IP address. Excess requests get `429 RATE_LIMITED` with `retryAfterMs` and
 a `Retry-After` header. Set `ARENA_RATE_LIMIT` (requests) and
 `ARENA_RATE_WINDOW` (for example `10s`) to change the limit.
 
+The server writes one JSON log record per line to standard output for each
+operational event: `game_created`, `player_joined`, `move_accepted`,
+`move_rejected` (with its error `code`), `move_replayed` (an idempotent
+retry), `player_resigned`, `game_completed` and `server_error`. Every game
+record has a `gameId`; records name players by `agt_` ID and never contain API
+keys. For example, list rejected moves with `./bin/arena | jq 'select(.event == "move_rejected")'`.
+
 ## Playing in the browser
 
 `make run`, then open http://localhost:8080. Enter a name, choose red or

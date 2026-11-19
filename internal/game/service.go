@@ -7,6 +7,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
+	"log/slog"
 	"sync"
 	"time"
 
@@ -138,15 +139,43 @@ type Service struct {
 	games map[string]*record
 	order []string
 	now   func() time.Time
+	log   *slog.Logger
 }
 
-// NewService returns an empty in-memory game service.
-func NewService() *Service {
-	return &Service{
+// Option configures a Service.
+type Option func(*Service)
+
+// WithLogger makes the service record a structured log record for each game
+// creation, player join, accepted or rejected move and game completion
+// (NFR-006). Records carry player identifiers, never credentials (SEC-005).
+func WithLogger(logger *slog.Logger) Option {
+	return func(s *Service) { s.log = logger }
+}
+
+// NewService returns an empty in-memory game service. Without WithLogger it
+// logs nothing.
+func NewService(opts ...Option) *Service {
+	s := &Service{
 		games: map[string]*record{},
 		now:   func() time.Time { return time.Now().UTC() },
+		log:   slog.New(slog.DiscardHandler),
 	}
+	for _, opt := range opts {
+		opt(s)
+	}
+	return s
 }
+
+// Event names of the service's log records (NFR-006).
+const (
+	EventGameCreated   = "game_created"
+	EventPlayerJoined  = "player_joined"
+	EventMoveAccepted  = "move_accepted"
+	EventMoveReplayed  = "move_replayed"
+	EventMoveRejected  = "move_rejected"
+	EventResigned      = "player_resigned"
+	EventGameCompleted = "game_completed"
+)
 
 // Create starts a new game waiting for two players (GAME-001, GAME-002).
 func (s *Service) Create(mode Mode) (Game, error) {
@@ -175,6 +204,7 @@ func (s *Service) Create(mode Mode) (Game, error) {
 	rec.game.ID = id
 	s.games[id] = rec
 	s.order = append(s.order, id)
+	s.log.Info("game created", "event", EventGameCreated, "gameId", id, "mode", string(mode))
 	return rec.game.snapshot(), nil
 }
 
@@ -221,6 +251,8 @@ func (s *Service) Join(gameID, playerID string, disc engine.Disc, displayName st
 		g.LegalMoves = rec.board.LegalMoves()
 	}
 	g.UpdatedAt = s.now()
+	s.log.Info("player joined", "event", EventPlayerJoined, "gameId", g.ID, "playerId", playerID,
+		"disc", string(disc), "playerType", string(playerType), "status", string(g.Status))
 	return g.snapshot(), nil
 }
 
@@ -279,9 +311,41 @@ func (s *Service) Move(gameID, playerID string, column, expectedVersion int) (Mo
 // that recorded result without playing again, even if the game has moved on.
 // Rejected moves are not recorded, so a retry of one is evaluated afresh.
 func (s *Service) MoveWithKey(gameID, playerID string, column, expectedVersion int, key string) (MoveResult, error) {
+	result, replayed, err := s.move(gameID, playerID, column, expectedVersion, key)
+	switch {
+	case err != nil:
+		code := CodeInternal
+		var gameErr *Error
+		if errors.As(err, &gameErr) {
+			code = gameErr.Code
+		}
+		s.log.Info("move rejected", "event", EventMoveRejected, "gameId", gameID, "playerId", playerID,
+			"column", column, "expectedVersion", expectedVersion, "code", string(code))
+	case replayed:
+		s.log.Info("move replayed", "event", EventMoveReplayed, "gameId", gameID, "playerId", playerID,
+			"moveNumber", result.Move.MoveNumber, "version", result.Version)
+	default:
+		s.log.Info("move accepted", "event", EventMoveAccepted, "gameId", gameID, "playerId", playerID,
+			"moveNumber", result.Move.MoveNumber, "column", column, "row", result.Move.Row,
+			"disc", string(result.Move.Disc), "version", result.Version)
+		if result.Status == StatusCompleted {
+			s.logCompleted(gameID, result.Winner, result.ResultReason, result.Move.MoveNumber, result.Version)
+		}
+	}
+	return result, err
+}
+
+func (s *Service) logCompleted(gameID string, winner engine.Disc, reason ResultReason, moves, version int) {
+	s.log.Info("game completed", "event", EventGameCompleted, "gameId", gameID,
+		"winner", string(winner), "resultReason", string(reason), "moves", moves, "version", version)
+}
+
+// move applies a move under the game's lock; replayed reports an idempotent
+// replay of an earlier accepted move.
+func (s *Service) move(gameID, playerID string, column, expectedVersion int, key string) (result MoveResult, replayed bool, err error) {
 	rec, err := s.lookup(gameID)
 	if err != nil {
-		return MoveResult{}, err
+		return MoveResult{}, false, err
 	}
 
 	rec.mu.Lock()
@@ -289,32 +353,32 @@ func (s *Service) MoveWithKey(gameID, playerID string, column, expectedVersion i
 	g := &rec.game
 	mover := g.playerByID(playerID)
 	if mover == nil {
-		return MoveResult{}, newError(CodeForbidden, gameID, "you are not a player in this game")
+		return MoveResult{}, false, newError(CodeForbidden, gameID, "you are not a player in this game")
 	}
 	if key != "" {
 		if prior, ok := rec.replays[replayKey{playerID, key}]; ok {
-			return prior, nil
+			return prior, true, nil
 		}
 	}
 	switch {
 	case g.Status == StatusCompleted:
-		return MoveResult{}, ruleError(CodeGameCompleted, g, "the game is over")
+		return MoveResult{}, false, ruleError(CodeGameCompleted, g, "the game is over")
 	case g.Status == StatusWaiting:
-		return MoveResult{}, ruleError(CodeGameNotStarted, g, "the game starts when both players have joined")
+		return MoveResult{}, false, ruleError(CodeGameNotStarted, g, "the game starts when both players have joined")
 	case mover.Disc != g.CurrentTurn:
-		return MoveResult{}, ruleError(CodeNotYourTurn, g, "the current turn belongs to the opposing player")
+		return MoveResult{}, false, ruleError(CodeNotYourTurn, g, "the current turn belongs to the opposing player")
 	case expectedVersion != g.Version:
-		return MoveResult{}, ruleError(CodeStaleState, g, "expectedVersion does not match the current version; re-read the game state")
+		return MoveResult{}, false, ruleError(CodeStaleState, g, "expectedVersion does not match the current version; re-read the game state")
 	}
 
 	row, outcome, err := rec.board.Drop(column, mover.Disc)
 	switch {
 	case errors.Is(err, engine.ErrInvalidColumn):
-		return MoveResult{}, ruleError(CodeInvalidColumn, g, "column must be an integer from 0 to 6")
+		return MoveResult{}, false, ruleError(CodeInvalidColumn, g, "column must be an integer from 0 to 6")
 	case errors.Is(err, engine.ErrColumnFull):
-		return MoveResult{}, ruleError(CodeColumnFull, g, "the column already holds six discs")
+		return MoveResult{}, false, ruleError(CodeColumnFull, g, "the column already holds six discs")
 	case err != nil:
-		return MoveResult{}, newError(CodeInternal, gameID, "the move could not be applied")
+		return MoveResult{}, false, newError(CodeInternal, gameID, "the move could not be applied")
 	}
 
 	now := s.now()
@@ -341,7 +405,7 @@ func (s *Service) MoveWithKey(gameID, playerID string, column, expectedVersion i
 		g.LegalMoves = rec.board.LegalMoves()
 	}
 
-	result := MoveResult{
+	result = MoveResult{
 		GameID:       g.ID,
 		Accepted:     true,
 		Move:         move,
@@ -357,7 +421,7 @@ func (s *Service) MoveWithKey(gameID, playerID string, column, expectedVersion i
 		}
 		rec.replays[replayKey{playerID, key}] = result
 	}
-	return result, nil
+	return result, false, nil
 }
 
 // Resign ends playerID's in-progress game with the opponent as winner
@@ -388,6 +452,8 @@ func (s *Service) Resign(gameID, playerID string) (Game, error) {
 	g.ResultReason = ReasonResignation
 	g.Version++
 	g.UpdatedAt = s.now()
+	s.log.Info("player resigned", "event", EventResigned, "gameId", g.ID, "playerId", playerID)
+	s.logCompleted(g.ID, g.Winner, g.ResultReason, len(g.Moves), g.Version)
 	return g.snapshot(), nil
 }
 

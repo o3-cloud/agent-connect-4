@@ -3,6 +3,7 @@ package app
 
 import (
 	"fmt"
+	"log/slog"
 	"net"
 	"net/http"
 	"strconv"
@@ -14,6 +15,7 @@ import (
 	"connect4arena/internal/houseagent"
 	"connect4arena/internal/identity"
 	"connect4arena/internal/mcpserver"
+	"connect4arena/internal/oplog"
 	"connect4arena/internal/ratelimit"
 	"connect4arena/internal/web"
 )
@@ -24,6 +26,9 @@ type Config struct {
 	// per RateWindow (SEC-007).
 	RateLimit  int
 	RateWindow time.Duration
+	// Logger receives the structured operational log (NFR-006). Nil logs
+	// nothing.
+	Logger *slog.Logger
 }
 
 // DefaultConfig allows 600 requests per minute per client: enough for an
@@ -62,10 +67,15 @@ func Handler() http.Handler {
 // New returns the service's HTTP handler: REST under /api/v1 and MCP at /mcp,
 // both backed by one new in-memory game service and agent registry, and the
 // browser UI. Arena Bot (ADR-014) plays house games through the same REST API.
-// API and MCP requests are rate limited per client (SEC-007).
+// API and MCP requests are rate limited per client (SEC-007). Game events and
+// unexpected server errors go to cfg.Logger (NFR-006).
 func New(cfg Config) http.Handler {
+	logger := cfg.Logger
+	if logger == nil {
+		logger = slog.New(slog.DiscardHandler)
+	}
 	mux := http.NewServeMux()
-	service, registry := game.NewService(), identity.NewRegistry()
+	service, registry := game.NewService(game.WithLogger(logger)), identity.NewRegistry()
 	bot := houseagent.New(mux)
 	api.Register(mux, service, registry, api.WithHouseOpponent(bot.Start))
 	web.Register(mux, service, registry, bot.Start)
@@ -73,7 +83,7 @@ func New(cfg Config) http.Handler {
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 	})
-	return rateLimit(mux, ratelimit.New(cfg.RateLimit, cfg.RateWindow), registry)
+	return oplog.Middleware(rateLimit(mux, ratelimit.New(cfg.RateLimit, cfg.RateWindow), registry), logger)
 }
 
 // rateLimit applies the limiter to API and MCP requests. A request with a
