@@ -120,3 +120,64 @@ func TestHouseAgentStrategy(t *testing.T) {
 		})
 	}
 }
+
+// house-agent-join-race-readme: Arena Bot takes the other slot before the
+// human's join returns, so the join response is already in_progress and the
+// human can move at once with no polling, whichever disc they choose.
+func TestHouseAgentIsSeatedBeforeJoinReturns(t *testing.T) {
+	a := newArena(t)
+	for run := 0; run < 20; run++ {
+		disc, botDisc := "red", "yellow"
+		if run%2 == 1 {
+			disc, botDisc = "yellow", "red"
+		}
+		created := a.red.do(http.MethodPost, "/api/v1/games", map[string]any{"mode": "human_vs_agent", "opponent": "house"}).
+			wantStatus(t, http.StatusCreated)
+		gameID := created.body["gameId"].(string)
+		joined := a.red.do(http.MethodPost, "/api/v1/games/"+gameID+"/join",
+			map[string]any{"disc": disc, "displayName": "Human", "type": "human"}).wantStatus(t, http.StatusOK)
+		if joined.body["status"] != "in_progress" {
+			t.Fatalf("run %d: join returned status %v, want in_progress", run, joined.body["status"])
+		}
+		bot := joined.body["players"].(map[string]any)[botDisc].(map[string]any)
+		if bot["displayName"] != houseagent.DisplayName {
+			t.Fatalf("run %d: %s player = %v, want Arena Bot", run, botDisc, bot)
+		}
+		if disc == "red" {
+			a.red.do(http.MethodPost, "/api/v1/games/"+gameID+"/moves",
+				map[string]any{"column": 3, "expectedVersion": number(joined.body["version"])}).wantStatus(t, http.StatusOK)
+		}
+	}
+}
+
+// The README flow, through the CLI: create, join and move with no waiting.
+func TestHouseAgentCLIJoinThenMove(t *testing.T) {
+	server := newServer(t)
+	key := cliKey(t, server, "You")
+	for run := 0; run < 10; run++ {
+		code, created := cliJSON(t, server, key, "create", "--mode", "human_vs_agent", "--opponent", "house")
+		gameID, _ := created["gameId"].(string)
+		if code != 0 || gameID == "" {
+			t.Fatalf("create: exit %d, %v", code, created)
+		}
+		if code, joined := cliJSON(t, server, key, "join", gameID, "--disc", "red", "--name", "You", "--type", "human"); code != 0 || joined["status"] != "in_progress" {
+			t.Fatalf("run %d: join: exit %d, %v", run, code, joined)
+		}
+		if code, moved := cliJSON(t, server, key, "move", gameID, "--column", "3"); code != 0 {
+			t.Fatalf("run %d: move straight after join: exit %d, %v", run, code, moved)
+		}
+	}
+}
+
+// The same holds for a human who joins a house game through MCP.
+func TestHouseAgentSeatedBeforeMCPJoinReturns(t *testing.T) {
+	a := newArena(t)
+	created := a.red.do(http.MethodPost, "/api/v1/games", map[string]any{"mode": "human_vs_agent", "opponent": "house"}).
+		wantStatus(t, http.StatusCreated)
+	gameID := created.body["gameId"].(string)
+	joined := callOK(t, mustConnectMCP(t, a.red), "join_game",
+		map[string]any{"game_id": gameID, "disc": "yellow", "display_name": "Human"})
+	if joined["status"] != "in_progress" {
+		t.Fatalf("join_game returned %v, want in_progress", joined)
+	}
+}

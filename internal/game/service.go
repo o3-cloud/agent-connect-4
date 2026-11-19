@@ -140,6 +140,8 @@ type Service struct {
 	order []string
 	now   func() time.Time
 	log   *slog.Logger
+	// awaitingOpponent runs after a join that leaves a game with one player.
+	awaitingOpponent func(gameID string)
 }
 
 // Option configures a Service.
@@ -150,6 +152,15 @@ type Option func(*Service)
 // (NFR-006). Records carry player identifiers, never credentials (SEC-005).
 func WithLogger(logger *slog.Logger) Option {
 	return func(s *Service) { s.log = logger }
+}
+
+// WithAwaitingOpponent makes Join call fn after a player takes the first slot
+// of a game, before Join returns, and then return the game as fn left it. fn
+// must not hold locks while it calls back into the service. Arena Bot uses it
+// to take the other slot of a house game before the human's join returns, so
+// the human can move straight away (ADR-014).
+func WithAwaitingOpponent(fn func(gameID string)) Option {
+	return func(s *Service) { s.awaitingOpponent = fn }
 }
 
 // NewService returns an empty in-memory game service. Without WithLogger it
@@ -212,6 +223,15 @@ func (s *Service) Create(mode Mode) (Game, error) {
 // once both slots are filled (GAME-004). playerID comes from the caller's
 // credentials, never from the request body.
 func (s *Service) Join(gameID, playerID string, disc engine.Disc, displayName string, playerType PlayerType) (Game, error) {
+	joined, err := s.join(gameID, playerID, disc, displayName, playerType)
+	if err != nil || joined.Status != StatusWaiting || s.awaitingOpponent == nil {
+		return joined, err
+	}
+	s.awaitingOpponent(gameID)
+	return s.Get(gameID)
+}
+
+func (s *Service) join(gameID, playerID string, disc engine.Disc, displayName string, playerType PlayerType) (Game, error) {
 	if disc != engine.Red && disc != engine.Yellow {
 		return Game{}, newError(CodeInvalidArgument, gameID, "disc must be red or yellow")
 	}

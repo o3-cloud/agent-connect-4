@@ -20,7 +20,7 @@ const DisplayName = "Arena Bot"
 
 const (
 	pollInterval = 25 * time.Millisecond
-	joinWait     = 10 * time.Minute // give up if no human joins
+	joinWait     = 10 * time.Minute // forget a house game nobody joins
 	gameLimit    = 6 * time.Hour    // stop watching an abandoned game
 )
 
@@ -32,13 +32,20 @@ type Agent struct {
 	once   sync.Once
 	key    string
 	regErr error
+
+	mu      sync.Mutex
+	pending map[string]bool // house games whose bot has not joined yet
 }
 
 // New returns an agent that reaches the API through handler in-process: each
 // request still passes through routing, authentication and validation, with
 // no network hop.
 func New(handler http.Handler) *Agent {
-	return &Agent{client: &http.Client{Transport: inProcess{handler}}, base: "http://arena/api/v1"}
+	return &Agent{
+		client:  &http.Client{Transport: inProcess{handler}},
+		base:    "http://arena/api/v1",
+		pending: map[string]bool{},
+	}
 }
 
 type inProcess struct{ handler http.Handler }
@@ -49,16 +56,46 @@ func (t inProcess) RoundTrip(r *http.Request) (*http.Response, error) {
 	return recorder.Result(), nil
 }
 
-// Start plays gameID in the background. A failure ends only that game's
-// goroutine (AGENT-005).
+// Start makes Arena Bot the opponent in gameID, a new house game. The bot
+// takes the other slot when a player joins (see Seat), or gives up the game if
+// nobody joins within joinWait.
 func (a *Agent) Start(gameID string) {
+	a.mu.Lock()
+	a.pending[gameID] = true
+	a.mu.Unlock()
+	time.AfterFunc(joinWait, func() {
+		a.mu.Lock()
+		delete(a.pending, gameID)
+		a.mu.Unlock()
+	})
+}
+
+// Seat takes the open slot of gameID if it is a house game waiting for its
+// bot, then plays the game in the background. The service calls it after a
+// player takes the first slot and before that player's join returns
+// (game.WithAwaitingOpponent), so the join response already shows the game
+// in progress. For any other game it does nothing. A failure ends only that
+// game (AGENT-005).
+func (a *Agent) Seat(gameID string) {
+	a.mu.Lock()
+	house := a.pending[gameID]
+	delete(a.pending, gameID)
+	a.mu.Unlock()
+	if !house {
+		return
+	}
+	me, err := a.join(gameID)
+	if err != nil {
+		slog.Warn("house agent did not join", "gameId", gameID, "error", err)
+		return
+	}
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
 				slog.Error("house agent stopped", "gameId", gameID, "panic", r)
 			}
 		}()
-		if err := a.play(gameID); err != nil {
+		if err := a.play(gameID, me); err != nil {
 			slog.Warn("house agent stopped", "gameId", gameID, "error", err)
 		}
 	}()
@@ -73,7 +110,8 @@ type gameState struct {
 	Version     int        `json:"version"`
 }
 
-func (a *Agent) play(gameID string) error {
+// join registers Arena Bot once and takes the game's one open slot.
+func (a *Agent) join(gameID string) (string, error) {
 	a.once.Do(func() {
 		var out struct {
 			APIKey string `json:"apiKey"`
@@ -82,33 +120,26 @@ func (a *Agent) play(gameID string) error {
 		a.key = out.APIKey
 	})
 	if a.regErr != nil {
-		return fmt.Errorf("register: %w", a.regErr)
+		return "", fmt.Errorf("register: %w", a.regErr)
 	}
-
-	// Wait for the human to take a slot, then take the other one.
 	var state gameState
-	deadline := time.Now().Add(joinWait)
-	for {
-		if err := a.call(http.MethodGet, "/games/"+gameID, nil, &state); err != nil {
-			return err
-		}
-		if state.Status != "waiting" {
-			return nil // someone else filled the game
-		}
-		if len(state.OpenSlots) == 1 {
-			break
-		}
-		if time.Now().After(deadline) {
-			return fmt.Errorf("no human joined within %s", joinWait)
-		}
-		time.Sleep(pollInterval)
+	if err := a.call(http.MethodGet, "/games/"+gameID, nil, &state); err != nil {
+		return "", err
+	}
+	if state.Status != "waiting" || len(state.OpenSlots) != 1 {
+		return "", fmt.Errorf("game is %s with %d open slots", state.Status, len(state.OpenSlots))
 	}
 	me := state.OpenSlots[0]
 	join := map[string]string{"disc": me, "displayName": DisplayName, "type": "agent"}
 	if err := a.call(http.MethodPost, "/games/"+gameID+"/join", join, nil); err != nil {
-		return fmt.Errorf("join: %w", err)
+		return "", fmt.Errorf("join: %w", err)
 	}
+	return me, nil
+}
 
+// play moves for me until the game ends.
+func (a *Agent) play(gameID, me string) error {
+	var state gameState
 	stop := time.Now().Add(gameLimit)
 	for time.Now().Before(stop) {
 		if err := a.call(http.MethodGet, "/games/"+gameID, nil, &state); err != nil {

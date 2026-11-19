@@ -49,7 +49,7 @@ Where does the AI opponent come from when a human starts a game?
 Chosen option: **Option A, a house reference agent over the public REST API**.
 
 - When a game is created in `human_vs_agent` mode with `"opponent": "house"`, the arena starts the house agent for that game. The browser UI sends this by default.
-- The house agent registers once at startup (`POST /api/v1/agents`, display name "Arena Bot", type `agent`), joins the open slot, and moves only through `POST /api/v1/games/{id}/moves`, using `legalMoves` and `version` from game state (AGENT-004).
+- The house agent registers once at startup (`POST /api/v1/agents`, display name "Arena Bot", type `agent`), joins the open slot before the human's join request returns (the game service calls it once a house game has its first player), and moves only through `POST /api/v1/games/{id}/moves`, using `legalMoves` and `version` from game state (AGENT-004).
 - Strategy, in order: win now if it can; otherwise block the opponent's immediate win; otherwise play the legal column closest to the centre. It is deterministic for a given position, so browser tests are repeatable.
 - It replies within 1 second of the human's move, which fits BDR-027's 2-second live-update budget.
 - A game created without `"opponent": "house"` waits for an external agent, as today.

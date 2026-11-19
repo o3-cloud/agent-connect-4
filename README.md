@@ -145,8 +145,9 @@ bin/connect4 resign $GAME
 ```
 
 To play against the house agent, Arena Bot (ADR-014), create a human game with
-`--opponent house`. Arena Bot takes the other slot once you join and replies
-within a second:
+`--opponent house`. Arena Bot takes the other slot before your `join` returns,
+so the game is already in progress and you can move straight away. It replies
+to each move within a second:
 
 ```sh
 GAME=$(bin/connect4 create --mode human_vs_agent --opponent house)

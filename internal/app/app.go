@@ -75,8 +75,10 @@ func New(cfg Config) http.Handler {
 		logger = slog.New(slog.DiscardHandler)
 	}
 	mux := http.NewServeMux()
-	service, registry := game.NewService(game.WithLogger(logger)), identity.NewRegistry()
 	bot := houseagent.New(mux)
+	// Arena Bot sits down before a human's join returns (ADR-014).
+	service := game.NewService(game.WithLogger(logger), game.WithAwaitingOpponent(bot.Seat))
+	registry := identity.NewRegistry()
 	api.Register(mux, service, registry, api.WithHouseOpponent(bot.Start))
 	web.Register(mux, service, registry, bot.Start)
 	mux.Handle(mcpserver.Path, mcpserver.Handler(service, registry))
