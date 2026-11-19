@@ -1,13 +1,13 @@
 {
   "artifact": "https://claude.ai/artifact/7gWGC88ig223niRe3xH4yN",
   "datasets": {
-    "history": "e43ed6f2275bb88326856623af38d5a3",
-    "issues": "44d8dd0cb975a1a4440bd31141682b78",
-    "bdrs": "a051236adee55de9654370a30af5ff5e",
-    "backlog": "8fa9626f0427c5ea87ccc825c04a6634",
-    "outcomes": "93d13b9033c067cbb6679e4d11bc392e",
-    "hitl": "a4715287cf45a4482e150243c7dec32c",
-    "loops": "0fe0ee028ea62e81cb6163008e51996b"
+    "history": "b5cd55686fa347a85dffee4087f1fbe2",
+    "issues": "86a4c1fa2c4f57245a607cf9eb281094",
+    "bdrs": "2a899e532d329c4e748e947d59641652",
+    "backlog": "fa5dff6296b140d9ddcade7ee7fcae72",
+    "outcomes": "4c324eb5db75b0f015b8bd4074b612c7",
+    "hitl": "9ee999a43307b4a89a82f739abd64709",
+    "loops": "f50a02d34e4f305c58cec11ae0be4740"
   },
   "refresh": "Each hourly run: python3 .sdlc/dashboard/collect.py; upload each out/<id>.json as an asset; update datasets/<id> source.url and updated.at; delete the old asset; record the new id here."
 }

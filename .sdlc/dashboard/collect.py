@@ -282,7 +282,9 @@ def hitl_add(item, kind, ask, ref, severity):
     hitl.append({"item": item, "kind": kind, "ask": ask, "ref": ref, "severity": severity})
 
 
-dirty = [l.split(None, 1)[1] for l in git("status", "--porcelain", "--untracked-files=no").splitlines() if l.strip()]
+# The dashboard's own outputs are committed by this loop at the end of each run, so they are not counted here.
+dirty = [p for p in (l.split(None, 1)[1] for l in git("status", "--porcelain", "--untracked-files=no").splitlines() if l.strip())
+         if not p.startswith(".sdlc/dashboard/")]
 if dirty:
     hitl_add(f"{len(dirty)} uncommitted files in the main checkout: " + ", ".join(dirty[:4]) + (" ..." if len(dirty) > 4 else ""),
              "Loop coordination", "Ask the owning loop to commit or park them on wip/<loop>; they are not counted as progress",
