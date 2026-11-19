@@ -48,8 +48,8 @@ are covered by BDR-006, BDR-011 and BDR-018.
 | [026](026-human-plays-agent-in-browser.md) | Human Plays an Agent in the Browser | Accepted |
 | [027](027-live-spectating.md) | Watch Games Live Without Refreshing | Proposed |
 | [028](028-browser-reconnect-recovery.md) | Recover After a Browser Disconnect | Proposed |
-| [029](029-responsive-layout.md) | Usable on Mobile and Desktop | Proposed |
-| [030](030-start-playing-quickly.md) | A Human Can Start Playing Within Seconds | Proposed |
+| [029](029-responsive-layout.md) | Usable on Mobile and Desktop | Accepted |
+| [030](030-start-playing-quickly.md) | A Human Can Start Playing Within Seconds | Accepted |
 | [031](031-move-latency-and-capacity.md) | Move Latency and Concurrent Game Capacity | Proposed |
 | [032](032-operational-event-logs.md) | Structured Operational Logs | Proposed |
 | [033](033-containerized-deployment.md) | Run From a Container With External Configuration | Proposed |
