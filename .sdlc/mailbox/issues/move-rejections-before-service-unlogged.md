@@ -8,7 +8,7 @@ branch: main
 commit: d30a814
 found: 2026-11-19
 closed: 2026-11-19
-fixed_in: 9fe1c57
+fixed_in: 59ee859
 ---
 
 # Moves rejected before the game service are not logged as move_rejected
