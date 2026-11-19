@@ -6,6 +6,7 @@ package api
 
 import (
 	"context"
+	_ "embed"
 	"errors"
 	"net/http"
 	"time"
@@ -31,6 +32,7 @@ func init() {
 // authenticate with API keys issued by registry (ADR-013).
 func Register(mux *http.ServeMux, service *game.Service, registry *identity.Registry, opts ...Option) {
 	config := huma.DefaultConfig("Connect Four Arena API", "1.0.0")
+	config.Info.Description = guide
 	config.OpenAPIPath = Prefix + "/openapi"
 	config.DocsPath = Prefix + "/docs"
 	config.SchemasPath = Prefix + "/schemas"
@@ -126,10 +128,40 @@ func Register(mux *http.ServeMux, service *game.Service, registry *identity.Regi
 		Security:    authed,
 		Errors:      []int{http.StatusUnauthorized, http.StatusForbidden, http.StatusNotFound, http.StatusConflict},
 	}, h.resign)
+	documentRateLimit(api.OpenAPI())
 
 	mux.HandleFunc(Prefix+"/", func(w http.ResponseWriter, _ *http.Request) {
 		writeError(w, newErrorResponse(game.CodeRouteNotFound, "no such endpoint; see "+Prefix+"/openapi.json"))
 	})
+}
+
+// guide is the OpenAPI info.description: enough for an agent that has only
+// the document to play a game (BDR-022 AC-4).
+//
+//go:embed guide.md
+var guide string
+
+// documentRateLimit adds the 429 RATE_LIMITED response, which the rate
+// limiter in front of the API can return for any operation (SEC-007), to
+// every operation in doc.
+func documentRateLimit(doc *huma.OpenAPI) {
+	for _, item := range doc.Paths {
+		for _, op := range []*huma.Operation{item.Get, item.Put, item.Post, item.Delete, item.Patch} {
+			if op == nil || op.Responses["500"] == nil {
+				continue
+			}
+			op.Responses["429"] = &huma.Response{
+				Description: "Too Many Requests: the client's request budget is spent (RATE_LIMITED)",
+				Content:     op.Responses["500"].Content,
+				Headers: map[string]*huma.Param{
+					"Retry-After": {
+						Description: "Seconds until the client may send requests again",
+						Schema:      &huma.Schema{Type: huma.TypeInteger, Minimum: new(float64(1))},
+					},
+				},
+			}
+		}
+	}
 }
 
 type handlers struct {
