@@ -1,6 +1,6 @@
 ---
 title: "BDR-027 not satisfied on main: Watch Games Live Without Refreshing"
-status: open
+status: closed
 source: bdr-verification
 bdr: BDR-027
 branch: main
@@ -38,3 +38,12 @@ curl -si -X POST -H 'Content-Type: application/json' -d '{"mode":"agent_vs_agent
 ```
 
 Root cause: the Connect Four Arena is not implemented on main; main is still the stack-base-go template. Tracked by `delivery-walking-skeleton.md`.
+
+## Resolution (9f8770f, 2026-11-19, BDR verify loop d5b9c49b)
+
+The observations above are from before the API, CLI, MCP and UI existed. I re-verified in Chrome as an anonymous spectator, with a JS marker to prove the page never reloaded, and accepted it:
+
+- AC-1: moves sent via MCP, REST and the CLI showed on the board and in the move list within 49-407 ms. The page polls `/games/{id}/board` every second.
+- AC-2: the winning CLI move changed the page to "Alpha wins".
+- AC-3: the page has no move controls and says the viewer is watching.
+- AC-4: updates came in the same order as the history.
