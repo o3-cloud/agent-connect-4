@@ -321,6 +321,16 @@
    "claimedAt": ""
   },
   {
+   "id": "idea-loop-survive-host-sleep",
+   "title": "Plan for the laptop sleeping: missed runs, a burst of runs on wake, and off-schedule runs that skip their commit",
+   "status": "proposed",
+   "type": "loop",
+   "outcomes": "4, 5",
+   "created": "2026-11-19",
+   "claimedBy": "",
+   "claimedAt": ""
+  },
+  {
    "id": "idea-loop-unverified-gates-ledger",
    "title": "Track skipped quality gates in a ledger so 'unverified' doesn't become permanent",
    "status": "proposed",
@@ -480,7 +490,7 @@
   },
   {
    "label": "Collected",
-   "value": "2026-11-19T17:25:59Z"
+   "value": "2026-11-19T19:19:16Z"
   }
  ]
 }

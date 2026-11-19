@@ -461,8 +461,8 @@
    "acCriteriaDone": 0,
    "acTotal": 3,
    "hitl": false,
-   "claimedBy": "",
-   "claimedAt": ""
+   "claimedBy": "5b5d3e77-65ad-4b95-a4f4-99ac7cf90b0f",
+   "claimedAt": "2026-11-19T17:27:31Z"
   },
   {
    "id": "bdr-029-responsive-layout",
@@ -826,7 +826,7 @@
   },
   {
    "label": "Collected",
-   "value": "2026-11-19T17:25:59Z"
+   "value": "2026-11-19T19:19:16Z"
   }
  ]
 }
