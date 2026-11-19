@@ -121,6 +121,9 @@ moves on your turn. Anyone with the game's link can watch.
 
 `make build` builds the stylesheet with a pinned Tailwind CLI (ADR-012), which
 `make` downloads once into `.tools/` and checks against its published checksum.
+The container image builds the stylesheet the same way: `make docker-build`
+builds the image, and `make docker-smoke` runs it and checks that it serves
+`/healthz` and `/static/app.css`.
 
 ## Playing with the `connect4` CLI
 

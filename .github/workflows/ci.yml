@@ -43,5 +43,5 @@ jobs:
         run: |
           npx --yes --package=@commitlint/cli@19.8.1 --package=@commitlint/config-conventional@19.8.1 \
             commitlint --from HEAD~1 --to HEAD --config commitlint.config.cjs
-      - name: Build Docker image
-        run: make docker-build
+      - name: Build and smoke-test Docker image
+        run: make docker-smoke

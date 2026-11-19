@@ -10,3 +10,6 @@ docs
 tests
 verify
 *.md
+.tools
+# The image builds its own stylesheet; never copy one built on the host.
+internal/web/static/app.css

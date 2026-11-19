@@ -22,7 +22,7 @@ CSS := internal/web/static/app.css
 
 .DEFAULT_GOAL := help
 
-.PHONY: help build css run check health clean install install-tools fmt fmt-check vet lint test coverage vuln docker-build compose-config tidy
+.PHONY: help build css run check health clean install install-tools fmt fmt-check vet lint test coverage vuln docker-build docker-smoke tailwind compose-config tidy
 
 help: ## Show available commands
 	@echo "Core commands:"
@@ -41,6 +41,8 @@ build: css ## Core: build the arena server and connect4 CLI (spec: interface/com
 	@echo "Project is ready to run."
 
 css: $(CSS) ## Build the browser stylesheet with the pinned Tailwind CLI (ADR-012)
+
+tailwind: $(TAILWIND) ## Download and verify the pinned Tailwind CLI (ADR-012)
 
 $(CSS): $(TAILWIND) internal/web/styles/app.css $(wildcard internal/web/templates/*.html)
 	@$(TAILWIND) -i internal/web/styles/app.css -o $(CSS) --minify 2>/dev/null
@@ -109,6 +111,9 @@ vuln: ## Scan dependencies for known vulnerabilities
 
 docker-build: ## Build the production container with BuildKit
 	DOCKER_BUILDKIT=1 docker build --tag connect4arena:local .
+
+docker-smoke: docker-build ## Run the container and check it serves /healthz and the stylesheet
+	@sh scripts/docker-smoke.sh connect4arena:local
 
 compose-config: ## Validate Compose configuration
 	docker compose config --quiet
