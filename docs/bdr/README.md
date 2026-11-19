@@ -33,7 +33,7 @@ are covered by BDR-006, BDR-011 and BDR-018.
 | [011](011-reject-stale-and-concurrent-moves.md) | Reject Stale and Concurrent Moves | Accepted |
 | [012](012-idempotent-move-retry.md) | Idempotent Move Retries | Accepted |
 | [013](013-authenticate-agent-operations.md) | Authenticate Agent Operations and Protect Credentials | Accepted |
-| [014](014-rate-limit-clients.md) | Rate-Limit Excess Requests Per Client | Proposed |
+| [014](014-rate-limit-clients.md) | Rate-Limit Excess Requests Per Client | Accepted |
 | [015](015-structured-errors.md) | Structured, Machine-Readable Errors | Proposed |
 | [016](016-move-history.md) | Ordered Move History | Accepted |
 | [017](017-replay-completed-game.md) | Replay a Completed Game Deterministically | Proposed |
@@ -42,7 +42,7 @@ are covered by BDR-006, BDR-011 and BDR-018.
 | [020](020-cli-watch-game.md) | Watch a Game From the CLI | Accepted |
 | [021](021-mcp-tools.md) | Play Through MCP Tools | Accepted |
 | [022](022-self-describing-interfaces.md) | Agents Can Discover How to Play | Proposed |
-| [023](023-cross-interface-consistency.md) | Identical Rules on Every Interface | Proposed |
+| [023](023-cross-interface-consistency.md) | Identical Rules on Every Interface | Accepted |
 | [024](024-autonomous-agent-match.md) | Two External Agents Complete a Game Autonomously | Proposed |
 | [025](025-agent-failure-isolation.md) | Isolate Agent Failures | Accepted |
 | [026](026-human-plays-agent-in-browser.md) | Human Plays an Agent in the Browser | Accepted |
