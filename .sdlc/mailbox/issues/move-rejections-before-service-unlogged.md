@@ -7,6 +7,8 @@ bdr: BDR-032
 branch: main
 commit: d30a814
 found: 2026-11-19
+claimed_by: 5b5d3e77-65ad-4b95-a4f4-99ac7cf90b0f
+claimed_at: 2026-11-19T14:25:30Z
 ---
 
 # Moves rejected before the game service are not logged as move_rejected
