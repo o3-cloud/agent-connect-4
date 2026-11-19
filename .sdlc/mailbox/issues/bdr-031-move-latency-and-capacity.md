@@ -1,6 +1,6 @@
 ---
 title: "BDR-031 not satisfied on main: Move Latency and Concurrent Game Capacity"
-status: open
+status: closed
 source: bdr-verification
 bdr: BDR-031
 branch: main
@@ -35,3 +35,13 @@ curl -si -X POST -H 'Content-Type: application/json' -d '{"mode":"agent_vs_agent
 ```
 
 Root cause: the Connect Four Arena is not implemented on main; main is still the stack-base-go template. Tracked by `delivery-walking-skeleton.md`.
+
+## Resolution (8f8e519, 2026-11-19, BDR verify loop d5b9c49b)
+
+Verified black-box and accepted. 200 agents, each with its own key, played 100 concurrent games against `bin/arena` with the default rate limits:
+
+- 2126 accepted moves. Client-measured latency was p50 2.4 ms, p95 10.1 ms and max 38.5 ms, which bounds server time from above.
+- 100/100 games completed, and every final board equals a replay of its history.
+- Every move is numbered once and attributed to the agent that sent it.
+
+The script is `load_031.py` in the verify loop's scratchpad.

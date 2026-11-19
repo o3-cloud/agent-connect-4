@@ -1,6 +1,6 @@
 ---
 title: "BDR-015 not satisfied on main: Structured, Machine-Readable Errors"
-status: open
+status: closed
 source: bdr-verification
 bdr: BDR-015
 branch: main
@@ -46,3 +46,7 @@ Root cause: the Connect Four Arena is not implemented on main; main is still the
 - Remaining before accepting: one contract test that runs the same violation through REST, CLI `--json` and MCP side by side (BDR-023).
 
 - **Update (9e55ba4):** the cross-interface contract test now exists. `TestContractSameViolationSameError` runs six rule violations through REST, CLI `--json` and MCP and gets the same error object every time. All four ACs are now covered by tests, so BDR-015 can be verified and accepted.
+
+## Resolution (8f8e519, 2026-11-19, BDR verify loop d5b9c49b)
+
+Verified black-box and accepted. Scenario 1: REST returns 409 `NOT_YOUR_TURN` with `message`, `retryable`, `gameId` and `currentVersion: 1`. Scenario 2: REST, `connect4 move --json` (exit 3) and MCP `make_move` return the same `COLUMN_FULL` object. MCP reports it as an `isError` tool result, not a JSON-RPC error. 401, 404, 422, unknown routes and malformed JSON keep the `{"error":{...}}` shape.
