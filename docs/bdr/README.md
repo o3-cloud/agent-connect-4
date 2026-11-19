@@ -32,7 +32,7 @@ are covered by BDR-006, BDR-011 and BDR-018.
 | [010](010-resign-game.md) | Resign a Game | Accepted |
 | [011](011-reject-stale-and-concurrent-moves.md) | Reject Stale and Concurrent Moves | Accepted |
 | [012](012-idempotent-move-retry.md) | Idempotent Move Retries | Accepted |
-| [013](013-authenticate-agent-operations.md) | Authenticate Agent Operations and Protect Credentials | Proposed |
+| [013](013-authenticate-agent-operations.md) | Authenticate Agent Operations and Protect Credentials | Accepted |
 | [014](014-rate-limit-clients.md) | Rate-Limit Excess Requests Per Client | Proposed |
 | [015](015-structured-errors.md) | Structured, Machine-Readable Errors | Proposed |
 | [016](016-move-history.md) | Ordered Move History | Accepted |
