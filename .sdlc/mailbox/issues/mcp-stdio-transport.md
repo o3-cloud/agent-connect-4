@@ -8,6 +8,7 @@ branch: main
 commit: e517837
 found: 2026-11-18
 closed: 2026-11-19
+fixed_in: abf73dc
 spec: [ADR-009, SPEC.md MCP-001]
 outcomes: [1, 6]
 ---
