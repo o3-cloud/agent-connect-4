@@ -6,8 +6,7 @@ bdr: BDR-018
 branch: main
 commit: 30cd082
 found: 2026-11-18
-claimed_by: 5b5d3e77-65ad-4b95-a4f4-99ac7cf90b0f
-claimed_at: 2026-11-19T21:08:54Z
+needs: human
 ---
 
 # BDR-018 not satisfied on main: Preserve Games Across Server Restarts
@@ -42,3 +41,11 @@ Root cause: the Connect Four Arena is not implemented on main; main is still the
 ## Note (584db77, 2026-11-18, session 5b5d3e77)
 
 Idempotency replay records (`record.replays` in `internal/game/service.go`, API-008) are in memory only. Persist them with the game, so that a retry sent after a restart still replays and does not play twice.
+
+## Progress (2026-11-19, session 5b5d3e77): blocked on a decision
+
+The Arena now exists, but everything it knows is in process memory: games, history, idempotency results and API keys. A restart loses all of it, so AC-1 to AC-4 still fail. Fixing this needs a storage choice that no ADR has made, and this loop has no mandate to make it for the owner.
+
+**Decision needed:** accept, amend or reject [ADR-015](../../../docs/adr/015-sqlite-persistence.md) (Proposed). It recommends SQLite through `modernc.org/sqlite`, which is pure Go, follows SPEC §19 and keeps the `CGO_ENABLED=0` `scratch` image. The move log is the source of truth, each move commits in one transaction, and `ARENA_DB_PATH` sets the location (unset means memory only). It also compares cgo SQLite, a stdlib JSON Lines journal (the fallback if no new dependency is wanted), bbolt and PostgreSQL.
+
+Once ADR-015 is accepted, the next issue-worker run implements it as the ADR describes (Store interface, then `sqlstore`, then the restart test) and closes this issue. BDR-033 AC-2 (persistence location set by configuration) follows from the same work.
