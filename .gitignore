@@ -49,3 +49,6 @@ prototype/
 # Pinned build tools (Tailwind CLI) and generated CSS (ADR-012)
 .tools/
 internal/web/static/app.css
+
+# Loop worktrees (docs/specs/practices/loop-coordination.md rule 9)
+.sdlc/worktree/

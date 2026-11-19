@@ -133,16 +133,24 @@ Add `--json` to any command to get exactly one JSON document on stdout. A failed
 command exits with the code in `SPEC.md` §16 (for example 6 for
 `NOT_YOUR_TURN`), and with `--json` prints the `error` object.
 
+A game needs two players, so the walkthrough registers two. Alpha's key goes
+in `CONNECT4_API_KEY`; Beta's is passed with `--api-key`:
+
 ```sh
-eval "$(bin/connect4 register --name Alpha | tail -1)"   # sets CONNECT4_API_KEY
+eval "$(bin/connect4 register --name Alpha | tail -1)"            # sets CONNECT4_API_KEY
+BETA=$(bin/connect4 register --name Beta | tail -1 | cut -d= -f2)  # a second player's key
 GAME=$(bin/connect4 create)
 bin/connect4 join $GAME --disc red --name Alpha
+bin/connect4 join $GAME --disc yellow --name Beta --api-key $BETA
 bin/connect4 move $GAME --column 3      # uses the current version unless --expected-version is set
 bin/connect4 state $GAME                # board and status
 bin/connect4 history $GAME --json       # ordered moves and result
+bin/connect4 resign $GAME --api-key $BETA   # either player may resign; the opponent wins
 bin/connect4 watch $GAME --json         # one JSON event per new move; exits 0 when the game ends
-bin/connect4 resign $GAME
 ```
+
+Run `watch` in a second terminal during a game to follow it live. On a finished
+game, as here, it prints the result and exits.
 
 To play against the house agent, Arena Bot (ADR-014), create a human game with
 `--opponent house`. Arena Bot takes the other slot before your `join` returns,

@@ -1,13 +1,12 @@
 ---
 title: "README CLI walkthrough joins only one player, so move and resign fail with GAME_NOT_STARTED"
-status: open
+status: closed
 source: bdr-verification
 type: defect
 branch: main
 commit: e517837
 found: 2026-11-18
-claimed_by: 5b5d3e77-65ad-4b95-a4f4-99ac7cf90b0f
-claimed_at: 2026-11-19T12:08:41Z
+closed: 2026-11-19
 spec: [CLI-001, interface/commands.md]
 bdr: [BDR-019, BDR-030]
 ---
@@ -60,3 +59,13 @@ Adjust this to however `register --json` actually reports the key. Add a test th
 ## Still reproduces (f375e07, 2026-11-19)
 
 The block is unchanged and still joins only Alpha. It now also runs `bin/connect4 watch $GAME --json`, which waits for moves in a game that never starts. A user pasting the block hangs at that line and never reaches `resign`. The house-agent block below it now works (0/20 failures).
+
+## Resolution
+
+The README's CLI block now registers Alpha (key in `CONNECT4_API_KEY`) and Beta (key in `$BETA`, passed with `--api-key`), joins both, moves, reads state and history, resigns as Beta, and runs `watch`, which prints the result and exits on the finished game. It needs no `jq`: Beta's key comes from the last line of `register` with `cut`. A note says to run `watch` in a second terminal to follow a live game.
+
+`TestREADMECLIWalkthroughRuns` (tests/readme_test.go) builds `bin/connect4`, extracts every `sh` block in the README's CLI section and runs them in order with `set -eu` against a test server, starting with no `CONNECT4_API_KEY`. It must see `game_completed`. It failed on the old README with `GAME_NOT_STARTED` and passes now, so the walkthrough cannot drift from the CLI again. The Arena Bot block in the same section runs too.
+
+Black-box: the same blocks, pasted into `sh` against the real `bin/arena`, exit 0. The walkthrough game ended `completed, red wins (resignation)`, and Arena Bot replied in the house game.
+
+Also fixed: `.sdlc/worktree/` is now in `.gitignore`. After `.sdlc` became tracked (6e8699e), loop worktrees showed up as untracked files in the main checkout.
