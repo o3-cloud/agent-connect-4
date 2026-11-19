@@ -90,7 +90,7 @@ func newRoot(opts *options) *cobra.Command {
 		return &apiError{Code: "INVALID_ARGUMENT", Message: err.Error()}
 	})
 	root.AddCommand(registerCommand(opts), createCommand(opts), joinCommand(opts), stateCommand(opts),
-		moveCommand(opts), historyCommand(opts), resignCommand(opts))
+		moveCommand(opts), historyCommand(opts), resignCommand(opts), watchCommand(opts))
 	return root
 }
 

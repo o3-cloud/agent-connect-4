@@ -114,6 +114,7 @@ bin/connect4 join $GAME --disc red --name Alpha
 bin/connect4 move $GAME --column 3      # uses the current version unless --expected-version is set
 bin/connect4 state $GAME                # board and status
 bin/connect4 history $GAME --json       # ordered moves and result
+bin/connect4 watch $GAME --json         # one JSON event per new move; exits 0 when the game ends
 bin/connect4 resign $GAME
 ```
 
