@@ -45,7 +45,7 @@ are covered by BDR-006, BDR-011 and BDR-018.
 | [023](023-cross-interface-consistency.md) | Identical Rules on Every Interface | Proposed |
 | [024](024-autonomous-agent-match.md) | Two External Agents Complete a Game Autonomously | Proposed |
 | [025](025-agent-failure-isolation.md) | Isolate Agent Failures | Proposed |
-| [026](026-human-plays-agent-in-browser.md) | Human Plays an Agent in the Browser | Proposed |
+| [026](026-human-plays-agent-in-browser.md) | Human Plays an Agent in the Browser | Accepted |
 | [027](027-live-spectating.md) | Watch Games Live Without Refreshing | Proposed |
 | [028](028-browser-reconnect-recovery.md) | Recover After a Browser Disconnect | Proposed |
 | [029](029-responsive-layout.md) | Usable on Mobile and Desktop | Proposed |
