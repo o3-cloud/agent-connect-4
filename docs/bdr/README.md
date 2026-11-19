@@ -43,7 +43,7 @@ are covered by BDR-006, BDR-011 and BDR-018.
 | [021](021-mcp-tools.md) | Play Through MCP Tools | Accepted |
 | [022](022-self-describing-interfaces.md) | Agents Can Discover How to Play | Accepted |
 | [023](023-cross-interface-consistency.md) | Identical Rules on Every Interface | Accepted |
-| [024](024-autonomous-agent-match.md) | Two External Agents Complete a Game Autonomously | Proposed |
+| [024](024-autonomous-agent-match.md) | Two External Agents Complete a Game Autonomously | Accepted |
 | [025](025-agent-failure-isolation.md) | Isolate Agent Failures | Accepted |
 | [026](026-human-plays-agent-in-browser.md) | Human Plays an Agent in the Browser | Accepted |
 | [027](027-live-spectating.md) | Watch Games Live Without Refreshing | Proposed |
