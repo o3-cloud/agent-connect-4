@@ -7,6 +7,8 @@ type: feature
 branch: main
 commit: e517837
 found: 2026-11-18
+claimed_by: 5b5d3e77-65ad-4b95-a4f4-99ac7cf90b0f
+claimed_at: 2026-11-19T19:29:08Z
 spec: [ADR-009, SPEC.md MCP-001]
 outcomes: [1, 6]
 ---
