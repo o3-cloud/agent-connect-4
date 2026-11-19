@@ -76,10 +76,12 @@ install: install-tools ## Install development tools and git hooks
 	pre-commit install
 	pre-commit install --hook-type commit-msg
 
+# govulncheck type-checks with the Go it was built with, so it is built with
+# this module's toolchain: an older Go cannot parse newer standard library code.
 install-tools: ## Install pinned Go development tools
 	go install golang.org/x/tools/cmd/goimports@latest
 	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
-	go install golang.org/x/vuln/cmd/govulncheck@v1.1.4
+	GOTOOLCHAIN=$$(go env GOVERSION) go install golang.org/x/vuln/cmd/govulncheck@v1.9.0
 
 fmt: ## Format Go files (spec: go.md:2-3)
 	gofmt -w .
