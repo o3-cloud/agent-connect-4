@@ -32,11 +32,17 @@ func NewRootCommand() *cobra.Command {
 }
 
 // Execute runs connect4 with args and returns the process exit code. getenv
-// supplies CONNECT4_SERVER and CONNECT4_API_KEY.
+// supplies CONNECT4_SERVER and CONNECT4_API_KEY. Standard input is os.Stdin.
 func Execute(args []string, stdout, stderr io.Writer, getenv func(string) string) int {
+	return ExecuteWithInput(args, os.Stdin, stdout, stderr, getenv)
+}
+
+// ExecuteWithInput is Execute with stdin given, for `connect4 mcp`.
+func ExecuteWithInput(args []string, stdin io.Reader, stdout, stderr io.Writer, getenv func(string) string) int {
 	opts := &options{getenv: getenv}
 	root := newRoot(opts)
 	root.SetArgs(args)
+	root.SetIn(stdin)
 	root.SetOut(stdout)
 	root.SetErr(stderr)
 	err := root.Execute()
@@ -90,7 +96,7 @@ func newRoot(opts *options) *cobra.Command {
 		return &apiError{Code: "INVALID_ARGUMENT", Message: err.Error()}
 	})
 	root.AddCommand(registerCommand(opts), createCommand(opts), joinCommand(opts), stateCommand(opts),
-		moveCommand(opts), historyCommand(opts), resignCommand(opts), watchCommand(opts))
+		moveCommand(opts), historyCommand(opts), resignCommand(opts), watchCommand(opts), mcpCommand(opts))
 	return root
 }
 

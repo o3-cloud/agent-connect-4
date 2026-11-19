@@ -182,6 +182,17 @@ For example, in an MCP client config:
     "headers": { "Authorization": "Bearer c4_..." } } } }
 ```
 
+For an MCP client that launches servers as subprocesses, `connect4 mcp` serves
+the same tools on stdin and stdout. It forwards every call to the arena named
+by `CONNECT4_SERVER`, as `CONNECT4_API_KEY`, so results and errors are exactly
+those of `/mcp`:
+
+```json
+{ "mcpServers": { "connect4": {
+    "command": "/path/to/bin/connect4", "args": ["mcp"],
+    "env": { "CONNECT4_SERVER": "http://localhost:8080", "CONNECT4_API_KEY": "c4_..." } } } }
+```
+
 ## Quality Gates
 
 - **Format**: `gofmt` passes (zero diffs)
