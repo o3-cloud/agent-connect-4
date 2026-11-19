@@ -6,6 +6,7 @@ branch: main
 commit: 08957ee
 found: 2026-11-18
 closed: 2026-11-19
+fixed_in: a4b4cae
 ---
 
 # Toolchain pin follow-ups: Renovate config and unverified Docker build
