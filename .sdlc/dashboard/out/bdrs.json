@@ -143,12 +143,12 @@
   {
    "bdr": "BDR-015",
    "title": "Structured, Machine-Readable Errors",
-   "status": "Proposed",
+   "status": "Accepted",
    "outcomes": "",
-   "issue": "open",
-   "acDone": 0,
+   "issue": "closed",
+   "acDone": 4,
    "acTotal": 4,
-   "satisfied": false
+   "satisfied": true
   },
   {
    "bdr": "BDR-016",
@@ -303,22 +303,22 @@
   {
    "bdr": "BDR-031",
    "title": "Move Latency and Concurrent Game Capacity",
-   "status": "Proposed",
+   "status": "Accepted",
    "outcomes": "",
-   "issue": "open",
-   "acDone": 0,
+   "issue": "closed",
+   "acDone": 3,
    "acTotal": 3,
-   "satisfied": false
+   "satisfied": true
   },
   {
    "bdr": "BDR-032",
    "title": "Structured Operational Logs",
    "status": "Proposed",
    "outcomes": "",
-   "issue": "open",
+   "issue": "closed",
    "acDone": 0,
    "acTotal": 3,
-   "satisfied": false
+   "satisfied": true
   },
   {
    "bdr": "BDR-033",
@@ -340,7 +340,7 @@
   },
   {
    "label": "Collected",
-   "value": "2026-11-19T12:53:18Z"
+   "value": "2026-11-19T14:52:49Z"
   }
  ]
 }

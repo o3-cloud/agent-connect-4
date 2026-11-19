@@ -1,5 +1,14 @@
 {
- "rows": [],
+ "rows": [
+  {
+   "item": "1 uncommitted files in the main checkout: .sdlc/mailbox/backlog/idea-load-test-with-agents.md",
+   "kind": "Loop coordination",
+   "ask": "Ask the owning loop to commit or park them on wip/<loop>; they are not counted as progress",
+   "ref": "loop-coordination rule 11-12",
+   "severity": "high",
+   "n": 1
+  }
+ ],
  "meta": [
   {
    "label": "collect.py",
@@ -9,7 +18,7 @@
   },
   {
    "label": "Collected",
-   "value": "2026-11-19T12:53:18Z"
+   "value": "2026-11-19T14:52:49Z"
   }
  ]
 }
