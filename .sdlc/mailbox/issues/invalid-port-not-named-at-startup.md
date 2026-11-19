@@ -7,6 +7,7 @@ branch: main
 commit: 53967bd
 found: 2026-11-19
 closed: 2026-11-19
+fixed_in: b4487fd
 spec: [README "Running in a container"]
 bdr: [BDR-033]
 ---
