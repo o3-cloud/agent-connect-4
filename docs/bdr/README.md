@@ -41,7 +41,7 @@ are covered by BDR-006, BDR-011 and BDR-018.
 | [019](019-cli-play-and-json-output.md) | Play Through the `connect4` CLI With Machine-Readable Output | Accepted |
 | [020](020-cli-watch-game.md) | Watch a Game From the CLI | Accepted |
 | [021](021-mcp-tools.md) | Play Through MCP Tools | Accepted |
-| [022](022-self-describing-interfaces.md) | Agents Can Discover How to Play | Proposed |
+| [022](022-self-describing-interfaces.md) | Agents Can Discover How to Play | Accepted |
 | [023](023-cross-interface-consistency.md) | Identical Rules on Every Interface | Accepted |
 | [024](024-autonomous-agent-match.md) | Two External Agents Complete a Game Autonomously | Proposed |
 | [025](025-agent-failure-isolation.md) | Isolate Agent Failures | Accepted |
