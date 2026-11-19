@@ -435,12 +435,12 @@
   {
    "id": "bdr-027-live-spectating",
    "title": "BDR-027 not satisfied on main: Watch Games Live Without Refreshing",
-   "status": "open",
+   "status": "closed",
    "source": "bdr-verification",
    "bdr": "BDR-027",
    "branch": "main",
    "found": "2026-11-18",
-   "closedApprox": "",
+   "closedApprox": "2026-11-19",
    "acDone": 0,
    "acCriteriaDone": 0,
    "acTotal": 4,
@@ -451,18 +451,18 @@
   {
    "id": "bdr-028-browser-reconnect-recovery",
    "title": "BDR-028 not satisfied on main: Recover After a Browser Disconnect",
-   "status": "open",
+   "status": "closed",
    "source": "bdr-verification",
    "bdr": "BDR-028",
    "branch": "main",
    "found": "2026-11-18",
-   "closedApprox": "",
+   "closedApprox": "2026-11-19",
    "acDone": 0,
    "acCriteriaDone": 0,
    "acTotal": 3,
    "hitl": false,
-   "claimedBy": "5b5d3e77-65ad-4b95-a4f4-99ac7cf90b0f",
-   "claimedAt": "2026-11-19T17:27:31Z"
+   "claimedBy": "",
+   "claimedAt": ""
   },
   {
    "id": "bdr-029-responsive-layout",
@@ -540,6 +540,22 @@
    "acDone": 0,
    "acCriteriaDone": 0,
    "acTotal": 3,
+   "hitl": false,
+   "claimedBy": "",
+   "claimedAt": ""
+  },
+  {
+   "id": "browser-click-ignores-rendered-version",
+   "title": "A browser click is applied to the latest board, not the board the player saw (BDR-028 AC-2)",
+   "status": "closed",
+   "source": "bdr-verification",
+   "bdr": "BDR-028",
+   "branch": "main",
+   "found": "2026-11-19",
+   "closedApprox": "2026-11-19",
+   "acDone": 0,
+   "acCriteriaDone": 0,
+   "acTotal": 0,
    "hitl": false,
    "claimedBy": "",
    "claimedAt": ""
@@ -755,12 +771,12 @@
   {
    "id": "mcp-stdio-transport",
    "title": "MCP is only reachable over HTTP; no stdio transport (connect4 mcp)",
-   "status": "open",
+   "status": "closed",
    "source": "loop-run",
    "bdr": "",
    "branch": "main",
    "found": "2026-11-18",
-   "closedApprox": "",
+   "closedApprox": "2026-11-19",
    "acDone": 0,
    "acCriteriaDone": 0,
    "acTotal": 0,
@@ -826,7 +842,7 @@
   },
   {
    "label": "Collected",
-   "value": "2026-11-19T19:19:16Z"
+   "value": "2026-11-19T19:52:46Z"
   }
  ]
 }

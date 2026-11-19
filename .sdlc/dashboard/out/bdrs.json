@@ -263,22 +263,22 @@
   {
    "bdr": "BDR-027",
    "title": "Watch Games Live Without Refreshing",
-   "status": "Proposed",
+   "status": "Accepted",
    "outcomes": "4",
-   "issue": "open",
-   "acDone": 0,
+   "issue": "closed",
+   "acDone": 4,
    "acTotal": 4,
-   "satisfied": false
+   "satisfied": true
   },
   {
    "bdr": "BDR-028",
    "title": "Recover After a Browser Disconnect",
    "status": "Proposed",
    "outcomes": "",
-   "issue": "open",
+   "issue": "closed",
    "acDone": 0,
    "acTotal": 3,
-   "satisfied": false
+   "satisfied": true
   },
   {
    "bdr": "BDR-029",
@@ -340,7 +340,7 @@
   },
   {
    "label": "Collected",
-   "value": "2026-11-19T19:19:16Z"
+   "value": "2026-11-19T19:52:46Z"
   }
  ]
 }
