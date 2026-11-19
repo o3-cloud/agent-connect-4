@@ -7,6 +7,7 @@ branch: main
 commit: 30cd082
 found: 2026-11-18
 closed: 2026-11-19
+fixed_in: 37621da
 ---
 
 # BDR-025 not satisfied on main: Isolate Agent Failures
