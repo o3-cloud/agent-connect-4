@@ -5,9 +5,24 @@ COVERAGE_THRESHOLD := 80
 GO_PACKAGES := ./...
 PYTHON ?= python3
 
+# Tailwind CSS standalone CLI, pinned with per-platform checksums (ADR-012,
+# dependency-management.md rules 4 and 9). Checksums are from the release's
+# sha256sums.txt.
+TAILWIND_VERSION := 4.1.11
+TAILWIND := .tools/tailwindcss-$(TAILWIND_VERSION)
+TAILWIND_OS := $(shell uname -s | sed 's/Darwin/macos/;s/Linux/linux/')
+TAILWIND_ARCH := $(shell uname -m | sed 's/x86_64/x64/;s/aarch64/arm64/')
+TAILWIND_ASSET := tailwindcss-$(TAILWIND_OS)-$(TAILWIND_ARCH)
+TAILWIND_SHA256_macos-arm64 := f5984b9c005c3e67841c33906c7a7c92e85e405f61e029e9bb62e880dd662e79
+TAILWIND_SHA256_macos-x64 := 76e27326506d10d50e65b751795f0537f9304ecb100abe835ec138c41774f38c
+TAILWIND_SHA256_linux-x64 := 64805b84af4292e043ea6f86d242f191c0ac75359c1a498455dfe6c642afdbab
+TAILWIND_SHA256_linux-arm64 := 0409aa4222969f47fa6f4160fe5387e79bf7269e7afe0e8b22f7532c98e1d314
+SHA256 := $(shell command -v sha256sum >/dev/null 2>&1 && echo sha256sum || echo shasum -a 256)
+CSS := internal/web/static/app.css
+
 .DEFAULT_GOAL := help
 
-.PHONY: help build run check health clean install install-tools fmt fmt-check vet lint test coverage vuln docker-build compose-config tidy
+.PHONY: help build css run check health clean install install-tools fmt fmt-check vet lint test coverage vuln docker-build compose-config tidy
 
 help: ## Show available commands
 	@echo "Core commands:"
@@ -20,10 +35,26 @@ help: ## Show available commands
 	@echo "Utility commands:"
 	@awk 'BEGIN {FS = ":.*## "}; /^[a-zA-Z_-]+:.*## / && $$1 !~ /^(help|build|run|check|health|clean)$$/ {printf "  make %-12s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
-build: ## Core: build the arena server and connect4 CLI (spec: interface/commands.md)
+build: css ## Core: build the arena server and connect4 CLI (spec: interface/commands.md)
 	@CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o $(ARENA) ./cmd/arena
 	@CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o $(CLI) ./cmd/connect4
 	@echo "Project is ready to run."
+
+css: $(CSS) ## Build the browser stylesheet with the pinned Tailwind CLI (ADR-012)
+
+$(CSS): $(TAILWIND) internal/web/styles/app.css $(wildcard internal/web/templates/*.html)
+	@$(TAILWIND) -i internal/web/styles/app.css -o $(CSS) --minify 2>/dev/null
+	@echo "Built $(CSS)."
+
+$(TAILWIND):
+	@mkdir -p .tools
+	@echo "Downloading Tailwind CSS $(TAILWIND_VERSION) ($(TAILWIND_ASSET))..."
+	@curl -fsSL --retry 3 -o $@.tmp https://github.com/tailwindlabs/tailwindcss/releases/download/v$(TAILWIND_VERSION)/$(TAILWIND_ASSET)
+	@echo "$(TAILWIND_SHA256_$(TAILWIND_OS)-$(TAILWIND_ARCH))  $@.tmp" | $(SHA256) -c - >/dev/null || { rm -f $@.tmp; echo "Tailwind checksum mismatch for $(TAILWIND_ASSET)" >&2; exit 1; }
+	@chmod +x $@.tmp
+	@# macOS 27 kills the release's linker-only ad hoc signature; re-sign locally, after the checksum check.
+	@if [ "$(TAILWIND_OS)" = macos ]; then codesign --force --sign - $@.tmp 2>/dev/null; fi
+	@mv $@.tmp $@
 
 run: build ## Core: run the arena server (spec: interface/commands.md)
 	@echo "Project is running."
@@ -36,7 +67,7 @@ health: ## Core: show repository health (spec: interface/commands.md)
 	@$(PYTHON) scripts/health.py
 
 clean: ## Core: remove generated artifacts (spec: interface/commands.md)
-	@rm -rf bin $(COVERAGE_FILE) coverage.html
+	@rm -rf bin $(COVERAGE_FILE) coverage.html $(CSS)
 	@echo "Project is clean."
 
 install: install-tools ## Install development tools and git hooks

@@ -1,0 +1,32 @@
+/* Tailwind entry file (ADR-012). `make css` builds internal/web/static/app.css. */
+@import "tailwindcss";
+@source "../templates";
+
+@theme {
+  --color-disc-red: oklch(0.6 0.22 27);
+  --color-disc-yellow: oklch(0.86 0.17 92);
+  --color-board: oklch(0.45 0.16 262);
+  --color-hole: oklch(0.97 0.01 262);
+}
+
+@layer components {
+  .board { background: var(--color-board); }
+  .cell {
+    aspect-ratio: 1;
+    border-radius: 9999px;
+    background: var(--color-hole);
+  }
+  .cell[data-disc="red"], .disc-red { background: var(--color-disc-red); }
+  .cell[data-disc="yellow"], .disc-yellow { background: var(--color-disc-yellow); }
+  .disc { display: inline-block; border-radius: 9999px; }
+  .cell[data-disc="red"], .cell[data-disc="yellow"] { animation: drop 180ms ease-out; }
+}
+
+@keyframes drop {
+  from { transform: translateY(-40%); opacity: 0.6; }
+  to { transform: none; opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cell { animation: none !important; }
+}

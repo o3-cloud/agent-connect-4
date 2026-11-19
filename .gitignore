@@ -46,3 +46,7 @@ prototype/
 # Claude Code local state (shared config such as .claude/settings.json stays tracked)
 .claude/*.lock
 .claude/settings.local.json
+
+# Pinned build tools (Tailwind CLI) and generated CSS (ADR-012)
+.tools/
+internal/web/static/app.css

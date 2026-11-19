@@ -99,6 +99,16 @@ curl -s -X POST $API/games/$GAME/resign -H "Authorization: Bearer $BETA"
 Errors use one shape, `{"error": {"code", "message", "retryable", ...}}`,
 with the codes and HTTP statuses in `SPEC.md` §16.
 
+## Playing in the browser
+
+`make run`, then open http://localhost:8080. Enter a name, choose red or
+yellow, and click **Play vs AI**: you play Arena Bot (ADR-014). Click the arrow
+above a column to drop a disc; the board refreshes every second and only offers
+moves on your turn. Anyone with the game's link can watch.
+
+`make build` builds the stylesheet with a pinned Tailwind CLI (ADR-012), which
+`make` downloads once into `.tools/` and checks against its published checksum.
+
 ## Playing with the `connect4` CLI
 
 `make build` also produces `bin/connect4`. It talks to `$CONNECT4_SERVER`

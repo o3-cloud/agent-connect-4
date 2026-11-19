@@ -1,0 +1,23 @@
+{{define "head"}}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{.}} · Connect Four Arena</title>
+  <link rel="stylesheet" href="/static/app.css">
+  <script src="/static/htmx.min.js" defer></script>
+</head>
+<body class="min-h-screen bg-slate-50 text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100">
+  <header class="border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+    <div class="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
+      <a href="/" class="font-semibold tracking-tight">Connect Four Arena</a>
+    </div>
+  </header>
+  <main class="mx-auto max-w-3xl px-4 py-8">
+{{end}}
+
+{{define "foot"}}
+  </main>
+</body>
+</html>
+{{end}}

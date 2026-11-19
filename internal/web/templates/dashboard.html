@@ -1,0 +1,29 @@
+{{define "dashboard"}}{{template "head" "Play"}}
+<section class="mx-auto max-w-md">
+  <h1 class="text-2xl font-semibold tracking-tight">Play against an AI agent</h1>
+  <p class="mt-2 text-slate-600 dark:text-slate-400">Human vs Agent: you play Arena Bot, the house agent. Red moves first.</p>
+
+  {{with .Error}}<p role="alert" class="mt-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-800 dark:bg-red-950 dark:text-red-200">{{.}}</p>{{end}}
+
+  <form action="/play" method="post" class="mt-6 space-y-5 rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <input type="hidden" name="mode" value="human_vs_agent">
+    <label class="block">
+      <span class="text-sm font-medium">Your name</span>
+      <input name="name" value="{{.Name}}" required maxlength="64" autocomplete="nickname"
+             class="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-950">
+    </label>
+    <fieldset>
+      <legend class="text-sm font-medium">Your disc</legend>
+      <div class="mt-2 flex gap-3">
+        <label class="flex flex-1 cursor-pointer items-center gap-2 rounded-md border border-slate-300 px-3 py-2 has-[:checked]:border-slate-900 dark:border-slate-700 dark:has-[:checked]:border-slate-100">
+          <input type="radio" name="disc" value="red" checked> <span class="disc disc-red size-4"></span> Red (moves first)
+        </label>
+        <label class="flex flex-1 cursor-pointer items-center gap-2 rounded-md border border-slate-300 px-3 py-2 has-[:checked]:border-slate-900 dark:border-slate-700 dark:has-[:checked]:border-slate-100">
+          <input type="radio" name="disc" value="yellow"> <span class="disc disc-yellow size-4"></span> Yellow
+        </label>
+      </div>
+    </fieldset>
+    <button type="submit" class="w-full rounded-md bg-slate-900 px-4 py-2 font-medium text-white hover:bg-slate-700 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-300">Play vs AI</button>
+  </form>
+</section>
+{{template "foot"}}{{end}}
