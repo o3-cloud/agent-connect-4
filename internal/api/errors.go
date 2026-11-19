@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/danielgtaylor/huma/v2"
 
@@ -38,6 +40,7 @@ type ErrorBody struct {
 	Retryable      bool                `json:"retryable" doc:"Whether the request may succeed if retried after the condition clears"`
 	GameID         string              `json:"gameId,omitempty" doc:"The game the error is about"`
 	CurrentVersion *int                `json:"currentVersion,omitempty" doc:"The game's current state version, for game-rule errors"`
+	RetryAfterMs   *int                `json:"retryAfterMs,omitempty" doc:"For RATE_LIMITED: milliseconds until the caller may retry"`
 	Details        []*huma.ErrorDetail `json:"details,omitempty" doc:"Field-level validation problems"`
 }
 
@@ -165,6 +168,17 @@ func newHumaErrorWithContext(ctx huma.Context, status int, message string, errs 
 }
 
 // writeError writes an API error outside Huma, e.g. for unknown routes.
+// WriteRateLimited writes the SPEC.md §16 RATE_LIMITED error (SEC-007), with
+// retryAfterMs in the body and Retry-After, in whole seconds, as a header.
+func WriteRateLimited(w http.ResponseWriter, retryAfter time.Duration) {
+	ms := int((retryAfter + time.Millisecond - 1) / time.Millisecond)
+	ms = max(ms, 1)
+	resp := newErrorResponse(game.CodeRateLimited, "too many requests; retry after retryAfterMs milliseconds")
+	resp.Err.RetryAfterMs = &ms
+	w.Header().Set("Retry-After", strconv.Itoa((ms+999)/1000))
+	writeError(w, resp)
+}
+
 func writeError(w http.ResponseWriter, resp *ErrorResponse) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(resp.status)

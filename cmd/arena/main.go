@@ -30,9 +30,14 @@ func main() {
 		return
 	}
 
+	cfg, err := app.ConfigFromEnv(os.Getenv)
+	if err != nil {
+		_, _ = fmt.Fprintln(os.Stderr, err)
+		os.Exit(2)
+	}
 	server := &http.Server{
 		Addr:              ":" + port,
-		Handler:           app.Handler(),
+		Handler:           app.New(cfg),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {

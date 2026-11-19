@@ -99,6 +99,12 @@ curl -s -X POST $API/games/$GAME/resign -H "Authorization: Bearer $BETA"
 Errors use one shape, `{"error": {"code", "message", "retryable", ...}}`,
 with the codes and HTTP statuses in `SPEC.md` §16.
 
+Each client may make 600 API and MCP requests per minute by default. A request
+with a valid API key counts against its agent; any other request counts against
+its IP address. Excess requests get `429 RATE_LIMITED` with `retryAfterMs` and
+a `Retry-After` header. Set `ARENA_RATE_LIMIT` (requests) and
+`ARENA_RATE_WINDOW` (for example `10s`) to change the limit.
+
 ## Playing in the browser
 
 `make run`, then open http://localhost:8080. Enter a name, choose red or
