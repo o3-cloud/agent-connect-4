@@ -51,7 +51,7 @@ are covered by BDR-006, BDR-011 and BDR-018.
 | [029](029-responsive-layout.md) | Usable on Mobile and Desktop | Accepted |
 | [030](030-start-playing-quickly.md) | A Human Can Start Playing Within Seconds | Accepted |
 | [031](031-move-latency-and-capacity.md) | Move Latency and Concurrent Game Capacity | Accepted |
-| [032](032-operational-event-logs.md) | Structured Operational Logs | Proposed |
+| [032](032-operational-event-logs.md) | Structured Operational Logs | Accepted |
 | [033](033-containerized-deployment.md) | Run From a Container With External Configuration | Proposed |
 
 ## Authoring
