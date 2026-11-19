@@ -308,3 +308,57 @@ func TestMCPListAndHistory(t *testing.T) {
 		}
 	}
 }
+
+// BDR-015 AC-3: schema-level failures carry the same §16 code as REST. A
+// non-integer column is INVALID_COLUMN with game context, as on REST
+// (05bc64f); a missing column and other bad arguments are INVALID_ARGUMENT.
+func TestMCPSchemaErrorsCarryErrorObject(t *testing.T) {
+	a := newArena(t)
+	a.start(t)
+	session := mustConnectMCP(t, a.red)
+	same := func(mcpErr, restErr map[string]any) {
+		t.Helper()
+		for _, field := range []string{"code", "gameId", "currentVersion", "retryable"} {
+			if !jsonEqual(mcpErr[field], restErr[field]) {
+				t.Fatalf("%s differs: MCP %v, REST %v", field, mcpErr, restErr)
+			}
+		}
+	}
+
+	missing := wantToolError(t, session, "make_move",
+		map[string]any{"game_id": a.gameID, "expected_version": 0, "idempotency_key": "no-column"}, "INVALID_ARGUMENT")
+	same(missing, a.red.do(http.MethodPost, "/api/v1/games/"+a.gameID+"/moves",
+		map[string]any{"expectedVersion": 0}).wantError(t, http.StatusBadRequest, "INVALID_ARGUMENT"))
+
+	for name, column := range map[string]any{"fraction": 3.5, "text": "three", "bool": true} {
+		args := map[string]any{"game_id": a.gameID, "column": column, "expected_version": 0, "idempotency_key": "bad-" + name}
+		body := map[string]any{"column": column, "expectedVersion": 0}
+		mcpErr := wantToolError(t, session, "make_move", args, "INVALID_COLUMN")
+		if mcpErr["gameId"] != a.gameID || number(mcpErr["currentVersion"]) != 0 {
+			t.Fatalf("%s column: %v lacks gameId or currentVersion", name, mcpErr)
+		}
+		restErr := a.red.do(http.MethodPost, "/api/v1/games/"+a.gameID+"/moves", body).
+			wantError(t, http.StatusUnprocessableEntity, "INVALID_COLUMN")
+		same(mcpErr, restErr)
+	}
+
+	wantToolError(t, session, "make_move", map[string]any{
+		"game_id": "game_missing", "column": 3.5, "expected_version": 0, "idempotency_key": "k",
+	}, "GAME_NOT_FOUND")
+	for name, args := range map[string]map[string]any{
+		"no idempotency key": {"game_id": a.gameID, "column": 3, "expected_version": 0},
+		"version as text":    {"game_id": a.gameID, "column": 3, "expected_version": "0", "idempotency_key": "k"},
+		"game id as number":  {"game_id": 7, "column": 3, "expected_version": 0, "idempotency_key": "k"},
+	} {
+		errObject := wantToolError(t, session, "make_move", args, "INVALID_ARGUMENT")
+		if errObject["retryable"] != false {
+			t.Fatalf("%s: %v", name, errObject)
+		}
+	}
+	wantToolError(t, session, "join_game", map[string]any{"game_id": a.gameID, "disc": "green", "display_name": "X"}, "INVALID_ARGUMENT")
+	wantToolError(t, session, "get_game_state", map[string]any{}, "INVALID_ARGUMENT")
+
+	if state := a.state(t); number(state["version"]) != 0 {
+		t.Fatalf("invalid calls changed the game: version %v", state["version"])
+	}
+}
