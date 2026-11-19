@@ -22,6 +22,8 @@ import (
 
 // Config holds the server's tunable settings.
 type Config struct {
+	// Port is the TCP port the server listens on (PORT, default 8080).
+	Port int
 	// RateLimit is the number of API and MCP requests each client may make
 	// per RateWindow (SEC-007).
 	RateLimit  int
@@ -34,14 +36,22 @@ type Config struct {
 // DefaultConfig allows 600 requests per minute per client: enough for an
 // agent polling every second while it plays, far below abusive rates.
 func DefaultConfig() Config {
-	return Config{RateLimit: 600, RateWindow: time.Minute}
+	return Config{Port: 8080, RateLimit: 600, RateWindow: time.Minute}
 }
 
-// ConfigFromEnv reads ARENA_RATE_LIMIT (requests per window) and
-// ARENA_RATE_WINDOW (a Go duration such as 10s), defaulting each to
-// DefaultConfig.
+// ConfigFromEnv reads PORT (1 to 65535), ARENA_RATE_LIMIT (requests per
+// window) and ARENA_RATE_WINDOW (a Go duration such as 10s), defaulting each
+// to DefaultConfig. Its errors name the variable, so the server can refuse to
+// start before it logs anything.
 func ConfigFromEnv(getenv func(string) string) (Config, error) {
 	cfg := DefaultConfig()
+	if v := getenv("PORT"); v != "" {
+		n, err := strconv.Atoi(v)
+		if err != nil || n < 1 || n > 65535 {
+			return Config{}, fmt.Errorf("PORT must be a port number from 1 to 65535, got %q", v)
+		}
+		cfg.Port = n
+	}
 	if v := getenv("ARENA_RATE_LIMIT"); v != "" {
 		n, err := strconv.Atoi(v)
 		if err != nil || n < 1 {

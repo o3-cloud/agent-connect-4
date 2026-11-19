@@ -3,7 +3,8 @@
 # Starts the image the way compose.yaml does (read-only, no capabilities),
 # waits for /healthz and checks that the browser UI's stylesheet is served.
 # Then it starts the image again with a different PORT and checks that the
-# server and the image's health check follow it, with no rebuild (BDR-033).
+# server and the image's health check follow it, with no rebuild, and that an
+# invalid PORT stops the container with exit 2 (BDR-033).
 set -eu
 
 image=${1:-connect4arena:local}
@@ -52,4 +53,20 @@ if ! docker exec "$container" /app/arena -healthcheck; then
 	exit 1
 fi
 
-echo "docker-smoke: $image serves /healthz and the stylesheet, and follows PORT."
+docker stop "$container" >/dev/null
+trap - EXIT
+
+# An invalid setting stops the container at startup, naming the variable.
+for bad in abc 70000; do
+	status=0
+	out=$(docker run --rm --env "PORT=$bad" "$image" 2>&1) || status=$?
+	case $status:$out in
+	2:*"PORT must be a port number"*) ;;
+	*)
+		echo "docker-smoke: with PORT=$bad, want exit 2 naming PORT, got exit $status: $out" >&2
+		exit 1
+		;;
+	esac
+done
+
+echo "docker-smoke: $image serves /healthz and the stylesheet, follows PORT and rejects a bad PORT."

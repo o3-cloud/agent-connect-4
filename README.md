@@ -138,7 +138,7 @@ curl -s http://localhost:8080/api/v1/games
 
 | Variable | Default | Meaning |
 |----------|---------|---------|
-| `PORT` | `8080` | Port the server listens on, inside the container. The image's health check uses it too. |
+| `PORT` | `8080` | Port the server listens on (1 to 65535), inside the container. The image's health check uses it too. |
 | `ARENA_RATE_LIMIT` | `600` | Requests each client may make per window (a positive integer). |
 | `ARENA_RATE_WINDOW` | `1m` | Length of the rate-limit window, as a Go duration such as `10s`. |
 
