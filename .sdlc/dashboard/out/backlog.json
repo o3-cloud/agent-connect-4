@@ -13,7 +13,7 @@
   {
    "id": "idea-adr-persistence-sqlite-move-log",
    "title": "ADR-015: SQLite (pure Go) with an append-only move log as the source of truth",
-   "status": "proposed",
+   "status": "promoted",
    "type": "architecture",
    "outcomes": "4, 5",
    "created": "2026-11-18",
@@ -490,7 +490,7 @@
   },
   {
    "label": "Collected",
-   "value": "2026-11-19T20:52:47Z"
+   "value": "2026-11-19T21:52:49Z"
   }
  ]
 }

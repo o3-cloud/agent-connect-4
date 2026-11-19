@@ -1,13 +1,9 @@
 {
-  "artifact": "https://claude.ai/artifact/7gWGC88ig223niRe3xH4yN",
-  "datasets": {
-    "history": "362141d481ca73de5f36d3cee75e54b0",
-    "issues": "92d845b852df86e57d88f79b46f31871",
-    "bdrs": "2762c42b87d80a2a2f8e9fcf8e75a623",
-    "backlog": "130f952c2510fa7a6e36c503de7789fb",
-    "outcomes": "23f34af6c5dadbeb399c03a3cef43b3a",
-    "hitl": "2d1e2a87a78ab8c3594ae98cd54f7e20",
-    "loops": "03114d13e4f265e0a3743e5817e2200e"
-  },
-  "refresh": "Each hourly run: python3 .sdlc/dashboard/collect.py; upload each out/<id>.json as an asset; update datasets/<id> source.url and updated.at; delete the old asset; record the new id here."
+  "history": "e00acd62a674e9797337d3194c4f2988",
+  "issues": "0152977bf5792bc1a08393a8721b2cd6",
+  "bdrs": "6e9f76455a201c2cbee879c302900a47",
+  "backlog": "af024265d79dc9dc1696d487bc916712",
+  "outcomes": "8494a37f51c1fec732d899a06c4353e6",
+  "hitl": "bee22cdfa4643dba145c8b29789e5324",
+  "loops": "516958a3b0e0b2452c466b60589e6c2a"
 }

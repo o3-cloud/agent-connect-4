@@ -300,7 +300,7 @@
    "acDone": 0,
    "acCriteriaDone": 0,
    "acTotal": 4,
-   "hitl": false,
+   "hitl": true,
    "claimedBy": "",
    "claimedAt": ""
   },
@@ -831,6 +831,22 @@
    "hitl": false,
    "claimedBy": "",
    "claimedAt": ""
+  },
+  {
+   "id": "uncommitted-bdr-034-draft-blocks-main",
+   "title": "Uncommitted BDR-034 draft in the main checkout blocks the BDR-028 acceptance merge",
+   "status": "open",
+   "source": "bdr-verification",
+   "bdr": "[BDR-028, BDR-034]",
+   "branch": "",
+   "found": "2026-11-19",
+   "closedApprox": "",
+   "acDone": 0,
+   "acCriteriaDone": 0,
+   "acTotal": 0,
+   "hitl": true,
+   "claimedBy": "",
+   "claimedAt": ""
   }
  ],
  "meta": [
@@ -842,7 +858,7 @@
   },
   {
    "label": "Collected",
-   "value": "2026-11-19T20:52:47Z"
+   "value": "2026-11-19T21:52:49Z"
   }
  ]
 }
