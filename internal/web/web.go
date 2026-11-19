@@ -7,6 +7,7 @@ package web
 
 import (
 	"embed"
+	"errors"
 	"html/template"
 	"io/fs"
 	"net/http"
@@ -124,7 +125,10 @@ func (h handler) board(w http.ResponseWriter, r *http.Request) {
 
 // move is BDR-026 AC-2 and AC-3: a click submits a move only when the viewer
 // holds the turn and the column is legal; otherwise nothing is sent and the
-// current board comes back.
+// current board comes back. BDR-028 AC-2: the click carries the version of the
+// board it was made on, and a click on a board that has since changed (say,
+// after the browser was offline) moves nothing and returns the current board
+// with a notice.
 func (h handler) move(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("gameId")
 	g, err := h.service.Get(id)
@@ -132,12 +136,27 @@ func (h handler) move(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "No game has this identifier.", http.StatusNotFound)
 		return
 	}
-	column, err := strconv.Atoi(r.PathValue("column"))
-	if agent, ok := h.viewer(r); ok && err == nil && canMove(g, agent.ID) && legal(g, column) {
-		_, _ = h.service.Move(id, agent.ID, column, g.Version) // a lost race simply re-renders the latest state
+	column, columnErr := strconv.Atoi(r.PathValue("column"))
+	version, versionErr := strconv.Atoi(r.PostFormValue("version"))
+	stale := versionErr != nil || version != g.Version
+	if agent, ok := h.viewer(r); ok && !stale && columnErr == nil && canMove(g, agent.ID) && legal(g, column) {
+		// The service checks the version again, atomically, against a move
+		// that lands between our read and this call.
+		if _, err := h.service.Move(id, agent.ID, column, version); isStale(err) {
+			stale = true
+		}
 		g, _ = h.service.Get(id)
 	}
-	render(w, http.StatusOK, "board", h.boardView(r, g))
+	view := h.boardView(r, g)
+	if stale {
+		view.Notice = "The board changed while you were away. This is the current position."
+	}
+	render(w, http.StatusOK, "board", view)
+}
+
+func isStale(err error) bool {
+	var gameErr *game.Error
+	return errors.As(err, &gameErr) && gameErr.Code == game.CodeStaleState
 }
 
 func canMove(g game.Game, playerID string) bool {
@@ -190,6 +209,7 @@ type moveView struct {
 
 type boardView struct {
 	ID, Status, StatusText string
+	Notice                 string // why a click did not move (BDR-028)
 	Version                int
 	Live, Spectating       bool
 	Cells                  []cellView

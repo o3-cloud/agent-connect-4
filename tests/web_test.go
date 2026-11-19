@@ -86,7 +86,7 @@ func TestBrowserHumanPlaysFirstMove(t *testing.T) {
 		t.Fatalf("game page has %d column controls on the human's turn, want 7", got)
 	}
 
-	_, _, fragment := b.post("/games/"+game+"/moves/3", nil)
+	fragment := b.click(page, game, 3)
 	if !strings.Contains(fragment, `data-cell="5-3" data-disc="red"`) {
 		t.Fatalf("board after clicking column 3 has no red disc at the bottom of column 3:\n%s", fragment)
 	}
@@ -105,13 +105,15 @@ func TestBrowserHumanPlaysFirstMove(t *testing.T) {
 func TestBrowserBoardLockedOffTurn(t *testing.T) {
 	b, a := newBrowser(t)
 	game := startHumanGame(t, b, a, "red")
-	b.post("/games/"+game+"/moves/3", nil)
+	_, page := b.get("/games/" + game)
+	b.click(page, game, 3)
 	waitFor(t, a, time.Second, func(s map[string]any) bool { return number(s["version"]) == 2 })
 
 	// Now it is red's turn again; make it yellow's by having the human move,
-	// then click again before checking: the second click must not move.
-	_, _, afterMove := b.post("/games/"+game+"/moves/0", nil)
-	_, _, afterClick := b.post("/games/"+game+"/moves/6", nil)
+	// then click again on the board that move returned: it must not move.
+	_, page = b.get("/games/" + game + "/board")
+	afterMove := b.click(page, game, 0)
+	afterClick := b.click(afterMove, game, 6)
 	if moveControl.MatchString(afterMove) {
 		t.Fatalf("board offers moves while Arena Bot is to move:\n%s", afterMove)
 	}
@@ -140,7 +142,8 @@ func TestBrowserShowsResult(t *testing.T) {
 			break
 		}
 		version := number(state["version"])
-		b.post("/games/"+game+"/moves/"+string(rune('0'+ints(state["legalMoves"])[0])), nil)
+		_, board := b.get("/games/" + game + "/board")
+		b.click(board, game, ints(state["legalMoves"])[0])
 		waitFor(t, a, time.Second, func(s map[string]any) bool {
 			return s["status"] == "completed" || number(s["version"]) == version+2
 		})
@@ -156,7 +159,7 @@ func TestBrowserShowsResult(t *testing.T) {
 	if strings.Contains(page, `hx-trigger="every`) {
 		t.Fatalf("finished board keeps polling:\n%s", page)
 	}
-	b.post("/games/"+game+"/moves/3", nil)
+	b.click(page, game, 3)
 	if after := a.state(t); number(after["version"]) != number(state["version"]) {
 		t.Fatal("a click after the game ended changed the game")
 	}
@@ -208,9 +211,11 @@ func TestBrowserReadyForFirstMoveOnArrival(t *testing.T) {
 func TestBrowserShowsMoveHistoryInOrder(t *testing.T) {
 	b, a := newBrowser(t)
 	game := startHumanGame(t, b, a, "red")
-	b.post("/games/"+game+"/moves/3", nil)
+	_, page := b.get("/games/" + game + "/board")
+	b.click(page, game, 3)
 	waitFor(t, a, time.Second, func(s map[string]any) bool { return number(s["version"]) == 2 })
-	b.post("/games/"+game+"/moves/2", nil)
+	_, page = b.get("/games/" + game + "/board")
+	b.click(page, game, 2)
 	waitFor(t, a, time.Second, func(s map[string]any) bool { return number(s["version"]) == 4 })
 
 	_, board := b.get("/games/" + game + "/board")
