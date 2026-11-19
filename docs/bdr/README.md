@@ -36,7 +36,7 @@ are covered by BDR-006, BDR-011 and BDR-018.
 | [014](014-rate-limit-clients.md) | Rate-Limit Excess Requests Per Client | Accepted |
 | [015](015-structured-errors.md) | Structured, Machine-Readable Errors | Proposed |
 | [016](016-move-history.md) | Ordered Move History | Accepted |
-| [017](017-replay-completed-game.md) | Replay a Completed Game Deterministically | Proposed |
+| [017](017-replay-completed-game.md) | Replay a Completed Game Deterministically | Accepted |
 | [018](018-survive-server-restart.md) | Preserve Games Across Server Restarts | Proposed |
 | [019](019-cli-play-and-json-output.md) | Play Through the `connect4` CLI With Machine-Readable Output | Accepted |
 | [020](020-cli-watch-game.md) | Watch a Game From the CLI | Accepted |
