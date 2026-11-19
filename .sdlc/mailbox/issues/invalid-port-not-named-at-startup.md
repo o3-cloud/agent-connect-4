@@ -1,13 +1,12 @@
 ---
 title: "Invalid PORT logs server_started, then fails with 'lookup tcp/abc' and exit 1, never naming PORT"
-status: open
+status: closed
 source: bdr-verification
 type: defect
 branch: main
 commit: 53967bd
 found: 2026-11-19
-claimed_by: 5b5d3e77-65ad-4b95-a4f4-99ac7cf90b0f
-claimed_at: 2026-11-19T23:10Z
+closed: 2026-11-19
 spec: [README "Running in a container"]
 bdr: [BDR-033]
 ---
@@ -36,3 +35,11 @@ With an invalid `PORT`, an operator sees a `server_started` event for a server t
 Validate `PORT` with the other settings before anything is logged: it must be an integer from 1 to 65535. Otherwise exit 2 with `PORT must be a port number from 1 to 65535, got "abc"`. Emit `server_started` only after the listener is bound.
 
 Add `PORT=abc` (and `PORT=70000`) to the config tests and to `make docker-smoke`'s invalid-value check.
+
+## Resolution
+
+`PORT` is validated with the other settings in `app.ConfigFromEnv`. A value that is not an integer from 1 to 65535 stops the server with exit 2 and `PORT must be a port number from 1 to 65535, got "abc"`, before anything is logged. The server now binds its listener first and logs `server_started` only after that succeeds, so a port in use no longer produces a start record. `arena -healthcheck` exits 1 on a bad setting, because Docker reserves health check exit code 2.
+
+Tests (red before, green after): `TestPortConfigFromEnv`, `TestArenaRejectsInvalidPortByName` and `TestArenaLogsServerStartedOnlyAfterBinding` (runs the real binary on a busy port). `make docker-smoke` now checks `PORT=abc` and `PORT=70000`; against an image built from the previous main it fails with the issue's symptom. `make check` PASS, 91.6%.
+
+Black-box: `docker run --rm -e PORT=abc` and `-e PORT=70000` exit 2 naming `PORT`; `PORT=abc ./bin/arena` the same; a valid `PORT` starts, answers `/healthz` and passes `-healthcheck`.
