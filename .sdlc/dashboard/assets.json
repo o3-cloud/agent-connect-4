@@ -1,0 +1,13 @@
+{
+  "artifact": "https://claude.ai/artifact/7gWGC88ig223niRe3xH4yN",
+  "datasets": {
+    "history": "e43ed6f2275bb88326856623af38d5a3",
+    "issues": "44d8dd0cb975a1a4440bd31141682b78",
+    "bdrs": "a051236adee55de9654370a30af5ff5e",
+    "backlog": "8fa9626f0427c5ea87ccc825c04a6634",
+    "outcomes": "93d13b9033c067cbb6679e4d11bc392e",
+    "hitl": "a4715287cf45a4482e150243c7dec32c",
+    "loops": "0fe0ee028ea62e81cb6163008e51996b"
+  },
+  "refresh": "Each hourly run: python3 .sdlc/dashboard/collect.py; upload each out/<id>.json as an asset; update datasets/<id> source.url and updated.at; delete the old asset; record the new id here."
+}

@@ -1,0 +1,346 @@
+{
+ "rows": [
+  {
+   "bdr": "BDR-001",
+   "title": "Create a Game",
+   "status": "Accepted",
+   "outcomes": "1, 3",
+   "issue": "closed",
+   "acDone": 5,
+   "acTotal": 5,
+   "satisfied": true
+  },
+  {
+   "bdr": "BDR-002",
+   "title": "Join a Game and Start Play",
+   "status": "Accepted",
+   "outcomes": "1, 3",
+   "issue": "closed",
+   "acDone": 5,
+   "acTotal": 5,
+   "satisfied": true
+  },
+  {
+   "bdr": "BDR-003",
+   "title": "Read Authoritative Game State",
+   "status": "Accepted",
+   "outcomes": "1",
+   "issue": "closed",
+   "acDone": 5,
+   "acTotal": 5,
+   "satisfied": true
+  },
+  {
+   "bdr": "BDR-004",
+   "title": "List Visible Games",
+   "status": "Accepted",
+   "outcomes": "4",
+   "issue": "closed",
+   "acDone": 4,
+   "acTotal": 4,
+   "satisfied": true
+  },
+  {
+   "bdr": "BDR-005",
+   "title": "Submit a Legal Move",
+   "status": "Accepted",
+   "outcomes": "",
+   "issue": "closed",
+   "acDone": 4,
+   "acTotal": 4,
+   "satisfied": true
+  },
+  {
+   "bdr": "BDR-006",
+   "title": "Reject Invalid Moves Without Changing State",
+   "status": "Accepted",
+   "outcomes": "",
+   "issue": "closed",
+   "acDone": 4,
+   "acTotal": 4,
+   "satisfied": true
+  },
+  {
+   "bdr": "BDR-007",
+   "title": "Enforce Turn Order and Player Membership",
+   "status": "Accepted",
+   "outcomes": "5",
+   "issue": "closed",
+   "acDone": 5,
+   "acTotal": 5,
+   "satisfied": true
+  },
+  {
+   "bdr": "BDR-008",
+   "title": "Detect a Win and End the Game",
+   "status": "Accepted",
+   "outcomes": "5",
+   "issue": "closed",
+   "acDone": 4,
+   "acTotal": 4,
+   "satisfied": true
+  },
+  {
+   "bdr": "BDR-009",
+   "title": "Detect a Draw",
+   "status": "Accepted",
+   "outcomes": "",
+   "issue": "closed",
+   "acDone": 3,
+   "acTotal": 3,
+   "satisfied": true
+  },
+  {
+   "bdr": "BDR-010",
+   "title": "Resign a Game",
+   "status": "Accepted",
+   "outcomes": "",
+   "issue": "closed",
+   "acDone": 4,
+   "acTotal": 4,
+   "satisfied": true
+  },
+  {
+   "bdr": "BDR-011",
+   "title": "Reject Stale and Concurrent Moves",
+   "status": "Accepted",
+   "outcomes": "5",
+   "issue": "closed",
+   "acDone": 4,
+   "acTotal": 4,
+   "satisfied": true
+  },
+  {
+   "bdr": "BDR-012",
+   "title": "Idempotent Move Retries",
+   "status": "Accepted",
+   "outcomes": "",
+   "issue": "closed",
+   "acDone": 4,
+   "acTotal": 4,
+   "satisfied": true
+  },
+  {
+   "bdr": "BDR-013",
+   "title": "Authenticate Agent Operations and Protect Credentials",
+   "status": "Accepted",
+   "outcomes": "",
+   "issue": "closed",
+   "acDone": 4,
+   "acTotal": 4,
+   "satisfied": true
+  },
+  {
+   "bdr": "BDR-014",
+   "title": "Rate-Limit Excess Requests Per Client",
+   "status": "Accepted",
+   "outcomes": "",
+   "issue": "closed",
+   "acDone": 3,
+   "acTotal": 3,
+   "satisfied": true
+  },
+  {
+   "bdr": "BDR-015",
+   "title": "Structured, Machine-Readable Errors",
+   "status": "Proposed",
+   "outcomes": "",
+   "issue": "open",
+   "acDone": 0,
+   "acTotal": 4,
+   "satisfied": false
+  },
+  {
+   "bdr": "BDR-016",
+   "title": "Ordered Move History",
+   "status": "Accepted",
+   "outcomes": "4",
+   "issue": "closed",
+   "acDone": 4,
+   "acTotal": 4,
+   "satisfied": true
+  },
+  {
+   "bdr": "BDR-017",
+   "title": "Replay a Completed Game Deterministically",
+   "status": "Accepted",
+   "outcomes": "4, 5",
+   "issue": "closed",
+   "acDone": 4,
+   "acTotal": 4,
+   "satisfied": true
+  },
+  {
+   "bdr": "BDR-018",
+   "title": "Preserve Games Across Server Restarts",
+   "status": "Proposed",
+   "outcomes": "5",
+   "issue": "open",
+   "acDone": 0,
+   "acTotal": 4,
+   "satisfied": false
+  },
+  {
+   "bdr": "BDR-019",
+   "title": "Play Through the `connect4` CLI With Machine-Readable Output",
+   "status": "Accepted",
+   "outcomes": "1, 6",
+   "issue": "closed",
+   "acDone": 4,
+   "acTotal": 4,
+   "satisfied": true
+  },
+  {
+   "bdr": "BDR-020",
+   "title": "Watch a Game From the CLI",
+   "status": "Accepted",
+   "outcomes": "",
+   "issue": "closed",
+   "acDone": 3,
+   "acTotal": 3,
+   "satisfied": true
+  },
+  {
+   "bdr": "BDR-021",
+   "title": "Play Through MCP Tools",
+   "status": "Accepted",
+   "outcomes": "1, 6",
+   "issue": "closed",
+   "acDone": 4,
+   "acTotal": 4,
+   "satisfied": true
+  },
+  {
+   "bdr": "BDR-022",
+   "title": "Agents Can Discover How to Play",
+   "status": "Accepted",
+   "outcomes": "1, 6",
+   "issue": "closed",
+   "acDone": 4,
+   "acTotal": 4,
+   "satisfied": true
+  },
+  {
+   "bdr": "BDR-023",
+   "title": "Identical Rules on Every Interface",
+   "status": "Accepted",
+   "outcomes": "5",
+   "issue": "closed",
+   "acDone": 4,
+   "acTotal": 4,
+   "satisfied": true
+  },
+  {
+   "bdr": "BDR-024",
+   "title": "Two External Agents Complete a Game Autonomously",
+   "status": "Accepted",
+   "outcomes": "3",
+   "issue": "closed",
+   "acDone": 4,
+   "acTotal": 4,
+   "satisfied": true
+  },
+  {
+   "bdr": "BDR-025",
+   "title": "Isolate Agent Failures",
+   "status": "Accepted",
+   "outcomes": "",
+   "issue": "open",
+   "acDone": 3,
+   "acTotal": 3,
+   "satisfied": true
+  },
+  {
+   "bdr": "BDR-026",
+   "title": "Human Plays an Agent in the Browser",
+   "status": "Accepted",
+   "outcomes": "2",
+   "issue": "closed",
+   "acDone": 5,
+   "acTotal": 5,
+   "satisfied": true
+  },
+  {
+   "bdr": "BDR-027",
+   "title": "Watch Games Live Without Refreshing",
+   "status": "Proposed",
+   "outcomes": "4",
+   "issue": "open",
+   "acDone": 0,
+   "acTotal": 4,
+   "satisfied": false
+  },
+  {
+   "bdr": "BDR-028",
+   "title": "Recover After a Browser Disconnect",
+   "status": "Proposed",
+   "outcomes": "",
+   "issue": "open",
+   "acDone": 0,
+   "acTotal": 3,
+   "satisfied": false
+  },
+  {
+   "bdr": "BDR-029",
+   "title": "Usable on Mobile and Desktop",
+   "status": "Accepted",
+   "outcomes": "2, 6",
+   "issue": "closed",
+   "acDone": 3,
+   "acTotal": 3,
+   "satisfied": true
+  },
+  {
+   "bdr": "BDR-030",
+   "title": "A Human Can Start Playing Within Seconds",
+   "status": "Accepted",
+   "outcomes": "2, 6",
+   "issue": "closed",
+   "acDone": 3,
+   "acTotal": 3,
+   "satisfied": true
+  },
+  {
+   "bdr": "BDR-031",
+   "title": "Move Latency and Concurrent Game Capacity",
+   "status": "Proposed",
+   "outcomes": "",
+   "issue": "open",
+   "acDone": 0,
+   "acTotal": 3,
+   "satisfied": false
+  },
+  {
+   "bdr": "BDR-032",
+   "title": "Structured Operational Logs",
+   "status": "Proposed",
+   "outcomes": "",
+   "issue": "open",
+   "acDone": 0,
+   "acTotal": 3,
+   "satisfied": false
+  },
+  {
+   "bdr": "BDR-033",
+   "title": "Run From a Container With External Configuration",
+   "status": "Proposed",
+   "outcomes": "",
+   "issue": "open",
+   "acDone": 0,
+   "acTotal": 3,
+   "satisfied": false
+  }
+ ],
+ "meta": [
+  {
+   "label": "collect.py",
+   "value": "#!/usr/bin/env python3\n\"\"\"Collect a progress snapshot for the Arena Loop Progress dashboard.\n\nReads the loop mailbox (.sdlc/mailbox), the BDRs (docs/bdr), OUTCOMES.md and git,\nappends one snapshot to history.jsonl, and writes the dashboard's JSON files to out/.\nRun from the repository root:  python3 .sdlc/dashboard/collect.py\n\"\"\"\nimport datetime as dt\nimport json\nimport os\nimport re\nimport subprocess\nfrom pathlib import Path\n\nROOT = Path.cwd()\nHERE = Path(__file__).resolve().parent\nOUT = HERE / \"out\"\nMAILBOX = ROOT / \".sdlc\" / \"mailbox\"\nNOW = dt.datetime.now(dt.timezone.utc).replace(microsecond=0)\nSTAMP = NOW.isoformat().replace(\"+00:00\", \"Z\")\nCODE = Path(__file__).read_text()\n\nOUTCOMES = {\n    1: \"Any AI agent can play\",\n    2: \"Humans can play against AI\",\n    3: \"AI agents compete autonomously\",\n    4: \"Every game is observable\",\n    5: \"Reliable and fair\",\n    6: \"Effortless experience\",\n}\n\n\ndef git(*args):\n    try:\n        return subprocess.run([\"git\", *args], cwd=ROOT, capture_output=True, text=True, check=True).stdout.strip()\n    except subprocess.CalledProcessError:\n        return \"\"\n\n\ndef front_matter(text):\n    m = re.match(r\"^---\\n(.*?)\\n---\\n\", text, re.S)\n    meta = {}\n    if not m:\n        return meta, text\n    for line in m.group(1).splitlines():\n        if \":\" in line:\n            k, v = line.split(\":\", 1)\n            meta[k.strip()] = v.strip().strip('\"')\n    return meta, text[m.end():]\n\n\ndef listish(value):\n    return [x.strip() for x in value.strip(\"[]\").split(\",\") if x.strip()] if value else []\n\n\ndef mtime(p):\n    t = dt.datetime.fromtimestamp(p.stat().st_mtime, dt.timezone.utc).replace(microsecond=0)\n    return t.isoformat().replace(\"+00:00\", \"Z\")\n\n\n# ---- BDRs (docs/bdr as committed on HEAD; uncommitted edits are not progress) ----\nbdrs = {}\nfor p in sorted(Path(l) for l in git(\"ls-tree\", \"--name-only\", \"HEAD\", \"docs/bdr/\").splitlines()\n                if re.match(r\"\\d{3}-.*\\.md$\", Path(l).name)):\n    if p.name.startswith(\"000\"):\n        continue\n    text = git(\"show\", f\"HEAD:{p.as_posix()}\")\n    num = p.name[:3]\n    title = re.search(r\"^# BDR-\\d+: (.+)$\", text, re.M)\n    status = re.search(r\"## Status\\s+(\\S.*)\", text)\n    traces = re.search(r\"Traces to:.*?OUTCOMES\\.md ([0-9, ]+)\", text)\n    bdrs[f\"BDR-{num}\"] = {\n        \"bdr\": f\"BDR-{num}\",\n        \"title\": title.group(1) if title else p.stem,\n        \"status\": status.group(1).strip() if status else \"Unknown\",\n        \"outcomes\": [int(x) for x in re.findall(r\"\\d\", traces.group(1))] if traces else [],\n        \"acTotal\": len(re.findall(r\"^- AC-\\d+:\", text, re.M)),\n    }\nmain_bdr_count = len([l for l in git(\"ls-tree\", \"--name-only\", \"main\", \"docs/bdr/\").splitlines()\n                      if re.search(r\"/\\d{3}-\", l) and \"/000-\" not in l])\n\n# ---- mailbox issues ----\nissues = []\nfor p in sorted((MAILBOX / \"issues\").glob(\"*.md\")):\n    meta, body = front_matter(p.read_text())\n    done = len(re.findall(r\"^- \\[[xX]\\]\", body, re.M))\n    ac_done = len(re.findall(r\"^- \\[[xX]\\] AC-\\d+\", body, re.M))\n    todo = len(re.findall(r\"^- \\[ \\]\", body, re.M))\n    status = meta.get(\"status\", \"open\")\n    issues.append({\n        \"id\": p.stem,\n        \"title\": meta.get(\"title\", p.stem),\n        \"status\": status,\n        \"source\": meta.get(\"source\", \"\"),\n        \"bdr\": meta.get(\"bdr\", \"\"),\n        \"branch\": meta.get(\"branch\", \"\"),\n        \"found\": meta.get(\"found\", \"\"),\n        \"closedApprox\": mtime(p)[:10] if status == \"closed\" else \"\",\n        \"acDone\": done,\n        \"acCriteriaDone\": ac_done,\n        \"acTotal\": done + todo,\n        \"hitl\": meta.get(\"needs\", \"\") == \"human\" or meta.get(\"hitl\", \"\") == \"true\",\n        \"claimedBy\": meta.get(\"claimed_by\", \"\"),\n        \"claimedAt\": meta.get(\"claimed_at\", \"\"),\n    })\n\n# ---- backlog ----\nbacklog = []\nfor p in sorted((MAILBOX / \"backlog\").glob(\"*.md\")):\n    meta, _ = front_matter(p.read_text())\n    backlog.append({\n        \"id\": p.stem,\n        \"title\": meta.get(\"title\", p.stem),\n        \"status\": meta.get(\"status\", \"proposed\"),\n        \"type\": meta.get(\"type\", \"\"),\n        \"outcomes\": \", \".join(listish(meta.get(\"outcomes\", \"\"))),\n        \"created\": meta.get(\"created\", \"\"),\n        \"claimedBy\": meta.get(\"claimed_by\", \"\"),\n        \"claimedAt\": meta.get(\"claimed_at\", \"\"),\n    })\n\n# BDR progress = checked acceptance criteria on its tracking issue (or all, once Accepted).\nby_bdr = {i[\"bdr\"]: i for i in issues if i[\"bdr\"]}\nbdr_rows = []\nfor b in bdrs.values():\n    iss = by_bdr.get(b[\"bdr\"])\n    accepted = b[\"status\"] == \"Accepted\"\n    ac_done = b[\"acTotal\"] if accepted else min(iss[\"acCriteriaDone\"], b[\"acTotal\"]) if iss else 0\n    bdr_rows.append({\n        \"bdr\": b[\"bdr\"], \"title\": b[\"title\"], \"status\": b[\"status\"],\n        \"outcomes\": \", \".join(map(str, b[\"outcomes\"])),\n        \"issue\": iss[\"status\"] if iss else \"none\",\n        \"acDone\": ac_done, \"acTotal\": b[\"acTotal\"],\n        \"satisfied\": accepted or bool(iss and iss[\"status\"] == \"closed\"),\n    })\n\noutcome_rows = []\nfor n, name in OUTCOMES.items():\n    rel = [r for r in bdr_rows if str(n) in r[\"outcomes\"].split(\", \")]\n    outcome_rows.append({\n        \"outcome\": n, \"name\": name, \"bdrs\": len(rel),\n        \"bdrsSatisfied\": sum(r[\"satisfied\"] for r in rel),\n        \"acDone\": sum(r[\"acDone\"] for r in rel), \"acTotal\": sum(r[\"acTotal\"] for r in rel),\n        \"backlogItems\": sum(str(n) in b[\"outcomes\"].split(\", \") for b in backlog),\n    })\n\n# ---- git / loop activity ----\nbranch = git(\"rev-parse\", \"--abbrev-ref\", \"HEAD\")\nahead_origin = git(\"rev-list\", \"--count\", \"origin/main..main\") or \"0\"\nbranch_ahead = git(\"rev-list\", \"--count\", f\"main..{branch}\") if branch != \"main\" else \"0\"\ncommits_24h = git(\"rev-list\", \"--count\", \"--all\", \"--since=24 hours ago\") or \"0\"\nmailbox_files = list(MAILBOX.rglob(\"*.md\"))\nlast_mailbox = max((mtime(p) for p in mailbox_files), default=\"\")\n\n# ---- snapshot ----\nsnap = {\n    \"at\": STAMP,\n    \"issuesOpen\": sum(i[\"status\"] in (\"open\", \"in_progress\", \"blocked\") for i in issues),\n    \"issuesInProgress\": sum(i[\"status\"] == \"in_progress\" for i in issues),\n    \"issuesClosed\": sum(i[\"status\"] == \"closed\" for i in issues),\n    \"issuesTotal\": len(issues),\n    \"bdrTotal\": len(bdr_rows),\n    \"bdrProposed\": sum(r[\"status\"] == \"Proposed\" for r in bdr_rows),\n    \"bdrAccepted\": sum(r[\"status\"] == \"Accepted\" for r in bdr_rows),\n    \"bdrSatisfied\": sum(r[\"satisfied\"] for r in bdr_rows),\n    \"bdrOnMain\": main_bdr_count,\n    \"acDone\": sum(r[\"acDone\"] for r in bdr_rows),\n    \"acTotal\": sum(r[\"acTotal\"] for r in bdr_rows),\n    \"backlogTotal\": len(backlog),\n    \"backlogProposed\": sum(b[\"status\"] == \"proposed\" for b in backlog),\n    \"mainAheadOfOrigin\": int(ahead_origin),\n    \"branchAheadOfMain\": int(branch_ahead or 0),\n    \"commits24h\": int(commits_24h),\n}\nfor o in outcome_rows:\n    snap[f\"o{o['outcome']}Done\"] = o[\"acDone\"]\n    snap[f\"o{o['outcome']}Satisfied\"] = o[\"bdrsSatisfied\"]\nhistory_path = HERE / \"history.jsonl\"\nwith history_path.open(\"a\") as f:\n    f.write(json.dumps(snap) + \"\\n\")\nhistory = [json.loads(l) for l in history_path.read_text().splitlines() if l.strip()]\n\n# ---- human-in-the-loop: automatic signals + judgement notes kept by the loop ----\nhitl = []\nfor i in issues:\n    if i[\"hitl\"] and i[\"status\"] == \"open\":\n        hitl.append({\"item\": i[\"title\"], \"kind\": \"Flagged issue\", \"ask\": \"Decision requested in the issue\", \"ref\": i[\"id\"], \"severity\": \"high\"})\nfor b in backlog:\n    if b[\"type\"] == \"spec-change\" and b[\"status\"] == \"proposed\":\n        hitl.append({\"item\": b[\"title\"], \"kind\": \"Spec change\", \"ask\": \"Approve or reject this change to SPEC.md\", \"ref\": b[\"id\"], \"severity\": \"medium\"})\nif snap[\"bdrOnMain\"] < snap[\"bdrTotal\"]:\n    hitl.append({\"item\": f\"{snap['bdrTotal'] - snap['bdrOnMain']} BDRs are not on main\", \"kind\": \"Merge\",\n                 \"ask\": f\"Review and merge branch {branch} ({snap['branchAheadOfMain']} commits) through a PR\",\n                 \"ref\": \"main-bdrs-not-on-main\", \"severity\": \"high\"})\n# Unpushed commits on main are expected while origin is the template; see hitl-notes.json.\nnotes_path = HERE / \"hitl-notes.json\"\nif notes_path.exists():\n    hitl += [n for n in json.loads(notes_path.read_text()) if n.get(\"open\", True)]\nfor n, h in enumerate(hitl):\n    h[\"n\"] = n + 1\n\n# ---- tracked loops (loops.json: name, session, role, cadence, mailbox sources) ----\nSESSIONS = Path(\"/private/tmp/claude-501\") / (\"-\" + str(ROOT).strip(\"/\").replace(\"/\", \"-\"))\nlock = {}\ntry:\n    lock = json.loads((ROOT / \".claude\" / \"scheduled_tasks.lock\").read_text())\nexcept (OSError, ValueError):\n    pass\n\n\ndef pid_alive(pid):\n    try:\n        os.kill(int(pid), 0)\n        return True\n    except (OSError, ValueError, TypeError):\n        return False\n\n\ndef live_sessions():\n    \"\"\"Map session id -> pid for Claude processes running in this repo.\n\n    A session's temp folder gets a `started` file when the process starts, so a live\n    `claude` process whose cwd is in this repo and whose start time is within 15 s of\n    that file's mtime is that session's process.\n    \"\"\"\n    found = {}\n    try:\n        pids = subprocess.run([\"pgrep\", \"-x\", \"claude\"], capture_output=True, text=True).stdout.split()\n    except OSError:\n        return found\n    starts = {}\n    for s in SESSIONS.iterdir() if SESSIONS.exists() else []:\n        if (s / \"started\").exists():\n            starts[s.name] = (s / \"started\").stat().st_mtime\n    for pid in pids:\n        cwd = subprocess.run([\"lsof\", \"-a\", \"-p\", pid, \"-d\", \"cwd\", \"-Fn\"], capture_output=True, text=True).stdout\n        if str(ROOT) not in cwd:\n            continue\n        lstart = subprocess.run([\"ps\", \"-o\", \"lstart=\", \"-p\", pid], capture_output=True, text=True).stdout.strip()\n        try:\n            t = dt.datetime.strptime(lstart, \"%a %b %d %H:%M:%S %Y\").timestamp()\n        except ValueError:\n            continue\n        best = min(starts.items(), key=lambda kv: abs(kv[1] - t), default=None)\n        if best and abs(best[1] - t) <= 15:\n            found[best[0]] = pid\n    return found\n\n\nlive = live_sessions()\nloops = []\nREGISTRY = json.loads((ROOT / \".sdlc\" / \"loops.json\").read_text())\nfor lp in REGISTRY:\n    if lp.get(\"noLoop\"):\n        continue  # a known session that runs no loop; registered so it is not flagged\n    sdir = SESSIONS / lp[\"session\"]\n    stamps = [p.stat().st_mtime for p in sdir.rglob(\"*\")] if sdir.exists() else []\n    last = (dt.datetime.fromtimestamp(max(stamps), dt.timezone.utc).strftime(\"%Y-%m-%d %H:%M\") + \" UTC\") if stamps else \"\"\n    if lp[\"loop\"] == \"Progress dashboard\":\n        status, last = \"running\", STAMP[:16].replace(\"T\", \" \") + \" UTC\"  # this run is that loop\n    elif lp[\"session\"] in live:\n        status = \"running\"\n    elif lock.get(\"sessionId\") == lp[\"session\"] and pid_alive(lock.get(\"pid\")):\n        status = \"running\"\n    else:\n        status = \"stopped\" if sdir.exists() else \"not found\"\n    mine = [i for i in issues if i[\"source\"] in lp.get(\"sources\", [])]\n    ideas = [b for b in backlog if lp.get(\"backlogType\") and b[\"type\"] == lp[\"backlogType\"]]\n    if mine:\n        activity = f\"{len(mine)} issues filed, {sum(i['status'] == 'closed' for i in mine)} closed\"\n    elif ideas:\n        activity = f\"{len(ideas)} backlog ideas, {sum(b['status'] != 'proposed' for b in ideas)} decided\"\n    elif lp[\"loop\"] == \"Progress dashboard\":\n        activity = f\"{snap['issuesTotal']} issues, {snap['acDone']}/{snap['acTotal']} criteria tracked\"\n    else:\n        activity = lp.get(\"note\", \"no mailbox output attributed\")\n    loops.append({\"loop\": lp[\"loop\"], \"session\": lp[\"session\"][:8], \"role\": lp[\"role\"], \"cadence\": lp[\"cadence\"] + (f\" at :{lp['minute']:02d}\" if isinstance(lp.get(\"minute\"), int) else \"\") + (f\" ({lp['job']})\" if lp.get(\"job\") else \"\"),\n                  \"job\": lp.get(\"job\", \"\"), \"status\": status, \"lastSeen\": last, \"detail\": activity})\n\n# ---- loop-coordination checks (docs/specs/practices/loop-coordination.md) ----\ndef hitl_add(item, kind, ask, ref, severity):\n    hitl.append({\"item\": item, \"kind\": kind, \"ask\": ask, \"ref\": ref, \"severity\": severity})\n\n\ndirty = [l.split(None, 1)[1] for l in git(\"status\", \"--porcelain\", \"--untracked-files=no\").splitlines() if l.strip()]\nif dirty:\n    hitl_add(f\"{len(dirty)} uncommitted files in the main checkout: \" + \", \".join(dirty[:4]) + (\" ...\" if len(dirty) > 4 else \"\"),\n             \"Loop coordination\", \"Ask the owning loop to commit or park them on wip/<loop>; they are not counted as progress\",\n             \"loop-coordination rule 11-12\", \"high\")\nregistered = {lp[\"session\"] for lp in REGISTRY}\nfor sid in sorted(set(live) - registered):\n    hitl_add(f\"Live session {sid[:8]} is not in .sdlc/loops.json\", \"Loop coordination\",\n             \"Register it, or confirm it runs no loop\", \"loop-coordination rule 1\", \"medium\")\ntimed = [lp for lp in REGISTRY if isinstance(lp.get(\"minute\"), int)]\nfor a_i, a in enumerate(timed):\n    for b in timed[a_i + 1:]:\n        gap = abs(a[\"minute\"] - b[\"minute\"]) % 60\n        isolated = all(lp.get(\"worktree\") and lp.get(\"claims\", True) for lp in (a, b))  # rule 5 exemption\n        if min(gap, 60 - gap) < 10 and set(a.get(\"writes\", [])) & set(b.get(\"writes\", [])) and not isolated:\n            hitl_add(f\"{a['loop']} and {b['loop']} start within 10 minutes and write the same folder\", \"Loop coordination\",\n                     \"Move one of them to another minute\", \"loop-coordination rule 5\", \"medium\")\nfor lp in REGISTRY:\n    exp = lp.get(\"expires\", \"\")\n    if exp:\n        left = dt.datetime.fromisoformat(exp.replace(\"Z\", \"+00:00\")) - NOW\n        if left < dt.timedelta(hours=24):\n            hitl_add(f\"{lp['loop']} expires {exp[:16].replace('T', ' ')} UTC\", \"Loop coordination\",\n                     \"Renew the job (re-run /loop) or let it end\", \"loop-coordination rule 2\", \"medium\" if left.total_seconds() > 0 else \"high\")\nfor it in issues + backlog:\n    if it.get(\"claimedAt\"):\n        try:\n            age = NOW - dt.datetime.fromisoformat(it[\"claimedAt\"].replace(\"Z\", \"+00:00\"))\n        except ValueError:\n            continue\n        if age > dt.timedelta(hours=2):\n            hitl_add(f\"Stale claim on {it['id']} by {it['claimedBy'][:8]}\", \"Loop coordination\",\n                     \"The claim is over 2 hours old; another loop may take it over\", \"loop-coordination rule 7\", \"low\")\nowned, owned_prefixes = set(), []\nfor lp in REGISTRY:\n    w = lp.get(\"worktree\", \"\").split(\" \")[0]\n    if not w:\n        continue\n    if \"<\" in w:  # a pattern such as .sdlc/worktree/<branch>: one worktree per run\n        owned_prefixes.append(str((ROOT / w.split(\"<\")[0]).resolve()) + \"/\")\n    else:\n        owned.add(str((ROOT / w).resolve()))\nfor line in git(\"worktree\", \"list\", \"--porcelain\").splitlines():\n    if line.startswith(\"worktree \"):\n        wt = str(Path(line[9:]).resolve())\n        if wt != str(ROOT.resolve()) and wt not in owned and not any(wt.startswith(p) for p in owned_prefixes):\n            hitl_add(f\"Worktree {wt} has no owner in .sdlc/loops.json\", \"Loop coordination\",\n                     \"Register it to its loop or remove it\", \"loop-coordination rule 13\", \"low\")\nfor n, h in enumerate(hitl):\n    h[\"n\"] = n + 1\nsnap[\"uncommittedFiles\"] = len(dirty)\nhistory[-1][\"uncommittedFiles\"] = len(dirty)\nhistory_path.write_text(\"\".join(json.dumps(h) + \"\\n\" for h in history))\n\nmeta = [{\"label\": \"collect.py\", \"value\": CODE, \"type\": \"code\", \"lang\": \"python\"},\n        {\"label\": \"Collected\", \"value\": STAMP}]\nOUT.mkdir(exist_ok=True)\nfor name, rows in {\n    \"history\": history, \"issues\": issues, \"bdrs\": bdr_rows, \"backlog\": backlog,\n    \"outcomes\": outcome_rows, \"hitl\": hitl, \"loops\": loops,\n}.items():\n    (OUT / f\"{name}.json\").write_text(json.dumps({\"rows\": rows, \"meta\": meta}, indent=1))\nprint(json.dumps(snap))\n",
+   "type": "code",
+   "lang": "python"
+  },
+  {
+   "label": "Collected",
+   "value": "2026-11-19T11:52:50Z"
+  }
+ ]
+}

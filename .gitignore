@@ -41,7 +41,6 @@ Thumbs.db
 # Workspace directories (for worktree pattern)
 workspace/
 prototype/
-.sdlc/
 
 # Claude Code local state (shared config such as .claude/settings.json stays tracked)
 .claude/*.lock

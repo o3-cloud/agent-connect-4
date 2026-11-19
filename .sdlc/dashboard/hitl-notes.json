@@ -1,0 +1,65 @@
+[
+ {
+  "item": "Proposed thresholds in BDR-027 and BDR-030 (2 s live update, at most 3 interactions to first move, 2 s ready)",
+  "kind": "Spec decision",
+  "ask": "Confirm or change the numbers. SPEC.md gives none",
+  "ref": "BDR-027, BDR-030",
+  "severity": "medium",
+  "open": false,
+  "resolution": "Adopted as written (2 s, 3 interactions, 2 s); BDR-030 updated (d6b9f25)."
+ },
+ {
+  "item": "SPEC.md names no HTTP status codes and no error codes for authentication, rate limits or join conflicts",
+  "kind": "Spec decision",
+  "ask": "Pin the codes in SPEC.md so the BDR tests can be strict",
+  "ref": "SPEC.md \u00a77, \u00a713, \u00a716",
+  "severity": "medium",
+  "open": false,
+  "resolution": "Pinned in SPEC.md \u00a716 Error Codes (d6b9f25), matching the prototype's codes."
+ },
+ {
+  "item": "Toolchain follow-up issue says no Renovate config exists, but .github/renovate.json is present",
+  "kind": "Loop finding to verify",
+  "ask": "Confirm whether the existing config covers the go.mod toolchain and Dockerfile images, then correct or close the issue",
+  "ref": "main-toolchain-followups",
+  "severity": "low",
+  "open": false,
+  "resolution": "Issue corrected: the Renovate config covers both; only the Docker build check remains, as loop work."
+ },
+ {
+  "item": "ADR-008 to ADR-012 are marked Accepted before PR review",
+  "kind": "Process",
+  "ask": "Keep Accepted, or switch to Proposed until the PR is approved (madr.md rule 16)",
+  "ref": "docs/adr/008-012",
+  "severity": "low",
+  "open": false,
+  "resolution": "Kept Accepted: the project owner chose these libraries directly, which is the approval madr.md asks for."
+ },
+ {
+  "item": "Unknown routes on main return 200 instead of 404",
+  "kind": "Design choice",
+  "ask": "Approve removing the catch-all GET / route from the template app",
+  "ref": "main-unknown-routes-return-200",
+  "severity": "low",
+  "open": false,
+  "resolution": "Already fixed on main by another loop (c89a57e)."
+ },
+ {
+  "item": "This project has no repository of its own: origin is the shared stack-base-go template",
+  "kind": "Setup",
+  "ask": "Create a Connect Four repo (or name one) and set it as origin, so work can go through PRs as git.md rule 6 requires. Nothing is pushed until then",
+  "ref": "git remote origin",
+  "severity": "high",
+  "open": false,
+  "resolution": "Repository re-initialized on 2026-11-18 as its own history (one \"init\" commit, no remote), so it is no longer tied to the stack-base-go template."
+ },
+ {
+  "item": "The new repository has no remote yet",
+  "kind": "Setup",
+  "ask": "Add a GitHub remote for Connect Four Arena when ready, so changes can go through PRs (git.md rule 6). Until then all work stays local",
+  "ref": "git remote",
+  "severity": "medium",
+  "open": false,
+  "resolution": "Project owner: no remote for now. Work lands on local main with linear history; revisit when a remote is added."
+ }
+]

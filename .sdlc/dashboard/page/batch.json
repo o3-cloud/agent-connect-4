@@ -1,0 +1,164 @@
+[
+ {
+  "op": "set",
+  "collection": "dash",
+  "doc_id": "meta",
+  "data": {
+   "title": "Arena Loop Progress",
+   "lang": "en"
+  }
+ },
+ {
+  "op": "set",
+  "collection": "datasets",
+  "doc_id": "history",
+  "data": {
+   "title": "Loop snapshots over time",
+   "description": "One row per hourly run: issue, BDR, criteria and backlog counts, compared run to run.",
+   "source": {
+    "kind": "file",
+    "url": "/_blob/e8e8f63aec2f5cb9c82038ab13b03fcb",
+    "name": "history.json",
+    "format": "json"
+   },
+   "updated": {
+    "at": "2026-11-18T14:59:21Z",
+    "by": "Claude (hourly progress loop)"
+   },
+   "schedule": "Rebuilt every hour by the progress loop running in a Claude Code session.",
+   "staleAfterHours": 3
+  }
+ },
+ {
+  "op": "set",
+  "collection": "datasets",
+  "doc_id": "issues",
+  "data": {
+   "title": "Loop issues",
+   "description": "Issues filed by the loops in the project mailbox, with their tracking status and ticked acceptance criteria.",
+   "source": {
+    "kind": "file",
+    "url": "/_blob/263d98667de625827a2ff79cf2e2ae89",
+    "name": "issues.json",
+    "format": "json"
+   },
+   "updated": {
+    "at": "2026-11-18T14:59:21Z",
+    "by": "Claude (hourly progress loop)"
+   },
+   "schedule": "Rebuilt every hour by the progress loop running in a Claude Code session.",
+   "staleAfterHours": 3
+  }
+ },
+ {
+  "op": "set",
+  "collection": "datasets",
+  "doc_id": "bdrs",
+  "data": {
+   "title": "BDR status",
+   "description": "Every behaviour contract in docs/bdr with its status, tracking issue and criteria met.",
+   "source": {
+    "kind": "file",
+    "url": "/_blob/071aa545b18b5492f86c97aca43eabf7",
+    "name": "bdrs.json",
+    "format": "json"
+   },
+   "updated": {
+    "at": "2026-11-18T14:59:21Z",
+    "by": "Claude (hourly progress loop)"
+   },
+   "schedule": "Rebuilt every hour by the progress loop running in a Claude Code session.",
+   "staleAfterHours": 3
+  }
+ },
+ {
+  "op": "set",
+  "collection": "datasets",
+  "doc_id": "backlog",
+  "data": {
+   "title": "Backlog ideas",
+   "description": "Ideas proposed by the loops in the project mailbox, with the outcomes they serve.",
+   "source": {
+    "kind": "file",
+    "url": "/_blob/385cc9be0c9ebdadf56bceed31d1334f",
+    "name": "backlog.json",
+    "format": "json"
+   },
+   "updated": {
+    "at": "2026-11-18T14:59:21Z",
+    "by": "Claude (hourly progress loop)"
+   },
+   "schedule": "Rebuilt every hour by the progress loop running in a Claude Code session.",
+   "staleAfterHours": 3
+  }
+ },
+ {
+  "op": "set",
+  "collection": "datasets",
+  "doc_id": "outcomes",
+  "data": {
+   "title": "Outcome progress",
+   "description": "For each outcome in OUTCOMES.md, the BDRs and acceptance criteria that trace to it.",
+   "source": {
+    "kind": "file",
+    "url": "/_blob/d5301e45d2c71aa3c74daf36dc1b4da0",
+    "name": "outcomes.json",
+    "format": "json"
+   },
+   "updated": {
+    "at": "2026-11-18T14:59:21Z",
+    "by": "Claude (hourly progress loop)"
+   },
+   "schedule": "Rebuilt every hour by the progress loop running in a Claude Code session.",
+   "staleAfterHours": 3
+  }
+ },
+ {
+  "op": "set",
+  "collection": "datasets",
+  "doc_id": "hitl",
+  "data": {
+   "title": "Decisions needed",
+   "description": "Open items that need a human: automatic signals from the repo plus judgement notes kept by the loop.",
+   "source": {
+    "kind": "file",
+    "url": "/_blob/2eb6b7af866df2e7f9835a28496a2947",
+    "name": "hitl.json",
+    "format": "json"
+   },
+   "updated": {
+    "at": "2026-11-18T14:59:21Z",
+    "by": "Claude (hourly progress loop)"
+   },
+   "schedule": "Rebuilt every hour by the progress loop running in a Claude Code session.",
+   "staleAfterHours": 3
+  }
+ },
+ {
+  "op": "set",
+  "collection": "datasets",
+  "doc_id": "loops",
+  "data": {
+   "title": "Loops",
+   "description": "Scheduled loops in this session and loop activity seen in the mailbox and git.",
+   "source": {
+    "kind": "file",
+    "url": "/_blob/ed9ec888c60ceb8c72991a82ff88644d",
+    "name": "loops.json",
+    "format": "json"
+   },
+   "updated": {
+    "at": "2026-11-18T14:59:21Z",
+    "by": "Claude (hourly progress loop)"
+   },
+   "schedule": "Rebuilt every hour by the progress loop running in a Claude Code session.",
+   "staleAfterHours": 3
+  }
+ },
+ {
+  "op": "set",
+  "collection": "files",
+  "doc_id": "index.html",
+  "file_path": "/Users/owenzanzal/CvilleAIEx/agent-connect-4/.sdlc/dashboard/page/index.doc.json"
+ }
+]
