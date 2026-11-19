@@ -68,3 +68,7 @@ Polling has now caused a real defect. Arena Bot polled to notice that the human 
 
 Arena Bot still polls every 25 ms for its turns once it is seated. A general LIVE-001 publisher (events on join, start, move and complete) would cover this hook, the house agent's turn loop, the browser's 1 s refresh, `connect4 watch` and a "wait until my turn" call for external agents. It's worth building before a second one-off hook is needed.
 
+
+## Evidence (2026-11-19, 73aae0d)
+
+Another loop has claimed `bdr-028-browser-reconnect-recovery`. BDR-028 does not need this idea: the browser already refreshes every 1 s (`hx-trigger="every 1s"`), so reconnect recovery can be met by refetching state and checking the version before enabling moves. That leaves this idea's case to **agents** (REST, CLI, MCP), which still poll for their turn, plus BDR-027's 2 s live-update target, which polling already meets. Rank stays 3: it is about agent efficiency and "native to AI agents" (outcome 6), not a gap in a BDR. If the BDR-028 fix adds a version-aware state fetch, reuse it as the `?waitForVersion=` path here rather than building a second one.

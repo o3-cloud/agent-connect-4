@@ -1,7 +1,7 @@
 ---
 title: "Arena load test: 100 concurrent agent-vs-agent games in CI"
 status: proposed
-rank: 5
+rank: 12
 type: quality
 outcomes: [5]
 spec: [NFR-002, NFR-003, AGENT-005, TURN-004]
@@ -37,4 +37,12 @@ NFR-002/003 proof; Phase 4 hardening.
 26 of 33 BDRs are now accepted. Of the 7 that remain, BDR-031 (move latency and capacity, NFR-002 and NFR-003, both MUST) is the only one that no other idea or issue gives a way to prove. The others map to: BDR-018 → `idea-adr-persistence-sqlite-move-log` (rank 1); BDR-027/028 → `idea-wait-for-turn` and the LIVE-001 event bus (rank 3); and BDR-015, 032 and 033 → open issues. Moved from rank 15 to rank 5.
 
 Parts that now exist and can be reused: the agent loops in `tests/agent_match_test.go` (7e2e0a3) for load agents, the JSON-line logs (d30a814) for counting errors, and `ARENA_RATE_LIMIT` (d9b031c), which must be raised or exempted for a load run. Otherwise 100 games from one IP address would be throttled almost at once. Run it after persistence lands, so the latency figures include the SQLite transaction.
+
+## Evidence (2026-11-19, 8f8e519)
+
+BDR-031 is accepted. The BDR verify loop ran a one-off black-box test against `bin/arena`: 200 agents, each with its own key and the default rate limits, played 100 games at once to completion. That was 2126 moves, with client-measured p50 2.4 ms, p95 10.1 ms and max 38.5 ms. All 100 games finished, every final board matched its replayed history, and every move was numbered once and credited to the right player.
+
+**Correction:** the previous evidence note said 100 games "from one IP address would be throttled almost at once". That was wrong. The limiter counts per API key, and only falls back to IP for requests without a valid key (d9b031c). Agents that each have their own key are never throttled by IP, as this run showed.
+
+What's left of this idea is a *repeatable* check. The run's harness isn't committed, so nothing catches a regression later. Two cases matter most: SQLite persistence (ADR-015) adding a transaction to every move, and the event bus replacing polling. Committing the harness as `cmd/arena-load` and running a short version in CI covers both. That makes it a hardening task, not a gap in the MUST requirements, so it moves from rank 5 to rank 12.
 
