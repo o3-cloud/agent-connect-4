@@ -1,0 +1,49 @@
+{{define "replay"}}{{template "head" "Replay"}}
+<div id="replay" class="grid gap-6 md:grid-cols-[minmax(0,1fr)_14rem]">
+  <section class="min-w-0">
+    <p class="text-center text-lg font-semibold" aria-live="polite">{{.StatusText}}</p>
+    <p class="mt-1 text-center text-sm tabular-nums text-slate-500">Move {{.Step}} of {{.Total}}</p>
+    <div class="board mx-auto mt-4 max-w-md rounded-2xl p-2 sm:p-3">
+      <div class="grid grid-cols-7 gap-1 sm:gap-2">
+        {{range .Cells}}<div class="cell" data-cell="{{.Row}}-{{.Col}}" data-disc="{{.Disc}}"></div>{{end}}
+      </div>
+    </div>
+    <nav aria-label="Replay controls" hx-boost="true" hx-target="#replay" hx-select="#replay" hx-swap="outerHTML"
+         class="mt-4 flex flex-wrap justify-center gap-2 text-sm">
+      {{range .Controls}}
+        {{if .Enabled}}<a href="/games/{{$.ID}}/replay?step={{.Step}}" aria-label="{{.Label}}"
+           class="rounded-md border border-slate-300 px-3 py-1.5 hover:bg-slate-100 focus-visible:outline-2 dark:border-slate-700 dark:hover:bg-slate-800">{{.Text}}</a>
+        {{else}}<span aria-disabled="true" class="rounded-md border border-slate-200 px-3 py-1.5 text-slate-400 dark:border-slate-800 dark:text-slate-600">{{.Text}}</span>{{end}}
+      {{end}}
+    </nav>
+  </section>
+
+  <aside class="min-w-0 space-y-4 text-sm">
+    <ul class="grid grid-cols-2 gap-3 md:grid-cols-1">
+      {{range .Players}}
+      <li class="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 dark:border-slate-800">
+        <span class="disc disc-{{.Disc}} size-4 shrink-0"></span>
+        <span class="min-w-0 truncate"><span class="font-medium">{{.Name}}</span>{{if .You}} (you){{end}}<br>
+          <span class="text-slate-500">{{.Disc}}{{with .Type}} · {{.}}{{end}}</span></span>
+      </li>
+      {{end}}
+    </ul>
+    <section>
+      <h2 class="font-medium">Moves</h2>
+      {{if .Moves}}
+      <ol class="mt-2 max-h-72 space-y-1 overflow-y-auto pr-1">
+        {{range .Moves}}
+        <li class="flex items-center gap-2 rounded px-1 {{if .Current}}bg-slate-200 font-medium dark:bg-slate-800{{else if gt .Number $.Step}}text-slate-400 dark:text-slate-600{{end}}"
+            data-move="{{.Number}}"{{if .Current}} aria-current="step"{{end}}>
+          <span class="w-6 text-right tabular-nums text-slate-500">{{.Number}}.</span>
+          <span class="disc disc-{{.Disc}} size-3 shrink-0"></span>
+          <span class="min-w-0 truncate">{{.Name}}: column {{.Column}}</span>
+        </li>
+        {{end}}
+      </ol>
+      {{else}}<p class="mt-2 text-slate-500">No moves were played.</p>{{end}}
+    </section>
+  </aside>
+</div>
+<p class="mt-6 text-center text-sm"><a href="/games/{{.ID}}" class="underline underline-offset-4">Back to game</a> · <a href="/" class="underline underline-offset-4">New game</a></p>
+{{template "foot"}}{{end}}

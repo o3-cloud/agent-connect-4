@@ -50,6 +50,7 @@ func Register(mux *http.ServeMux, service *game.Service, registry *identity.Regi
 	mux.HandleFunc("POST /play", h.play)
 	mux.HandleFunc("GET /games/{gameId}", h.gamePage)
 	mux.HandleFunc("GET /games/{gameId}/board", h.board)
+	mux.HandleFunc("GET /games/{gameId}/replay", h.replay)
 	mux.HandleFunc("POST /games/{gameId}/moves/{column}", h.move)
 }
 
@@ -190,6 +191,7 @@ type playerView struct {
 type moveView struct {
 	Number, Column int
 	Disc, Name     string
+	Current        bool
 }
 
 type boardView struct {
@@ -265,6 +267,62 @@ func (h handler) boardView(r *http.Request, g game.Game) boardView {
 		}
 	}
 	return v
+}
+
+type replayControl struct {
+	Text, Label string
+	Step        int
+	Enabled     bool
+}
+
+type replayView struct {
+	boardView
+	Step, Total int
+	Controls    []replayControl
+}
+
+// replay is BDR-017 AC-4: the board after ?step=N moves (clamped to the
+// game's moves), rebuilt from an empty board through the recorded moves, with
+// links to step back and forth. It never polls and offers no move controls.
+func (h handler) replay(w http.ResponseWriter, r *http.Request) {
+	g, err := h.service.Get(r.PathValue("gameId"))
+	if err != nil {
+		http.Error(w, "No game has this identifier.", http.StatusNotFound)
+		return
+	}
+	total := len(g.Moves)
+	step, _ := strconv.Atoi(r.URL.Query().Get("step"))
+	step = max(0, min(step, total))
+
+	board := engine.NewBoard()
+	for _, m := range g.Moves[:step] {
+		_, _, _ = board.Drop(m.Column, m.Disc) // recorded moves were legal when accepted
+	}
+	v := replayView{boardView: h.boardView(r, g), Step: step, Total: total}
+	v.Live = false
+	cells := board.Cells()
+	for i := range v.Cells {
+		v.Cells[i].Disc = string(cells[v.Cells[i].Row][v.Cells[i].Col])
+	}
+	for i := range v.Moves {
+		v.Moves[i].Current = v.Moves[i].Number == step
+	}
+	switch {
+	case step == total && g.Status == game.StatusCompleted:
+		// the final position: keep the game's result text
+	case step == 0:
+		v.StatusText = "Start of the game"
+	default:
+		m := v.Moves[step-1]
+		v.StatusText = m.Name + " (" + m.Disc + ") played column " + strconv.Itoa(m.Column)
+	}
+	v.Controls = []replayControl{
+		{Text: "« First", Label: "First move", Step: 0, Enabled: step > 0},
+		{Text: "‹ Previous", Label: "Previous move", Step: step - 1, Enabled: step > 0},
+		{Text: "Next ›", Label: "Next move", Step: step + 1, Enabled: step < total},
+		{Text: "Last »", Label: "Last move", Step: total, Enabled: step < total},
+	}
+	render(w, http.StatusOK, "replay", v)
 }
 
 func render(w http.ResponseWriter, status int, name string, data any) {
