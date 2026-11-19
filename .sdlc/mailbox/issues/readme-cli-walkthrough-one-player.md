@@ -7,6 +7,7 @@ branch: main
 commit: e517837
 found: 2026-11-18
 closed: 2026-11-19
+fixed_in: 6203c36
 spec: [CLI-001, interface/commands.md]
 bdr: [BDR-019, BDR-030]
 ---
