@@ -707,12 +707,12 @@
   {
    "id": "main-toolchain-followups",
    "title": "Toolchain pin follow-ups: Renovate config and unverified Docker build",
-   "status": "open",
+   "status": "closed",
    "source": "loop-run",
    "bdr": "",
    "branch": "main",
    "found": "2026-11-18",
-   "closedApprox": "",
+   "closedApprox": "2026-11-19",
    "acDone": 0,
    "acCriteriaDone": 0,
    "acTotal": 0,
@@ -842,7 +842,7 @@
   },
   {
    "label": "Collected",
-   "value": "2026-11-19T19:52:46Z"
+   "value": "2026-11-19T20:52:47Z"
   }
  ]
 }
