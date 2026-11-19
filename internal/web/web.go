@@ -11,6 +11,7 @@ import (
 	"io/fs"
 	"net/http"
 	"strconv"
+	"time"
 	"unicode/utf8"
 
 	"connect4arena/internal/engine"
@@ -98,6 +99,13 @@ func (h handler) play(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.house(created.ID)
+	// BDR-030 AC-3: land on a page that is ready for the first move. Arena Bot
+	// usually joins within a few milliseconds; never wait more than a second.
+	for deadline := time.Now().Add(time.Second); time.Now().Before(deadline); time.Sleep(10 * time.Millisecond) {
+		if g, err := h.service.Get(created.ID); err != nil || g.Status != game.StatusWaiting {
+			break
+		}
+	}
 	http.Redirect(w, r, "/games/"+created.ID, http.StatusSeeOther)
 }
 
@@ -179,6 +187,11 @@ type playerView struct {
 	You, ToMove      bool
 }
 
+type moveView struct {
+	Number, Column int
+	Disc, Name     string
+}
+
 type boardView struct {
 	ID, Status, StatusText string
 	Version                int
@@ -186,6 +199,7 @@ type boardView struct {
 	Cells                  []cellView
 	Columns                []columnView
 	Players                []playerView
+	Moves                  []moveView
 }
 
 func (h handler) boardView(r *http.Request, g game.Game) boardView {
@@ -209,6 +223,14 @@ func (h handler) boardView(r *http.Request, g game.Game) boardView {
 			pv.Name, pv.Type, pv.You = p.DisplayName, string(p.Type), isPlayer(p)
 		}
 		v.Players = append(v.Players, pv)
+	}
+
+	for _, m := range g.Moves {
+		mv := moveView{Number: m.MoveNumber, Column: m.Column, Disc: string(m.Disc), Name: string(m.Disc)}
+		if p := playerFor(g, m.Disc); p != nil {
+			mv.Name = p.DisplayName
+		}
+		v.Moves = append(v.Moves, mv)
 	}
 
 	name := func(disc engine.Disc) string {

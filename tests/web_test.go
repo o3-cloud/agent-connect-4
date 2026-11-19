@@ -6,6 +6,7 @@ import (
 	"net/http/cookiejar"
 	"net/url"
 	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -177,5 +178,52 @@ func TestBrowserRejectsBadSetupAndServesAssets(t *testing.T) {
 	}
 	if status, js := b.get("/static/htmx.min.js"); status != http.StatusOK || !strings.HasPrefix(js, "var htmx=") {
 		t.Fatalf("htmx not served: status %d", status)
+	}
+}
+
+// BDR-030 AC-1..3: from the start page a visitor needs only a name, Play, and
+// a column; no key or account; and the game page is ready for the first move
+// as soon as it loads, well within 2 seconds.
+func TestBrowserReadyForFirstMoveOnArrival(t *testing.T) {
+	b, _ := newBrowser(t)
+	start := time.Now()
+	status, path, page := b.post("/play", url.Values{"name": {"Ada"}, "disc": {"red"}})
+	ready := time.Since(start)
+	if status != http.StatusOK || !strings.HasPrefix(path, "/games/") {
+		t.Fatalf("POST /play ended at %s with %d", path, status)
+	}
+	if !strings.Contains(page, "Your turn") || len(moveControl.FindAllString(page, -1)) != 7 {
+		t.Fatalf("the first game page is not ready for a move:\n%s", page)
+	}
+	if ready > 2*time.Second {
+		t.Fatalf("game page took %s to be ready, want under 2s", ready)
+	}
+	if strings.Contains(page, "c4_") {
+		t.Fatal("an API key appears in the page")
+	}
+}
+
+// BDR-029 AC-3 and BDR-027 AC-4: the page shows the move history, in the
+// order the moves were played.
+func TestBrowserShowsMoveHistoryInOrder(t *testing.T) {
+	b, a := newBrowser(t)
+	game := startHumanGame(t, b, a, "red")
+	b.post("/games/"+game+"/moves/3", nil)
+	waitFor(t, a, time.Second, func(s map[string]any) bool { return number(s["version"]) == 2 })
+	b.post("/games/"+game+"/moves/2", nil)
+	waitFor(t, a, time.Second, func(s map[string]any) bool { return number(s["version"]) == 4 })
+
+	_, board := b.get("/games/" + game + "/board")
+	history := a.anon.do(http.MethodGet, "/api/v1/games/"+game+"/moves", nil).body["moves"].([]any)
+	last := -1
+	for _, m := range history {
+		move := m.(map[string]any)
+		entry := `data-move="` + strconv.Itoa(number(move["moveNumber"])) + `" data-disc="` + move["disc"].(string) +
+			`" data-column="` + strconv.Itoa(number(move["column"])) + `"`
+		at := strings.Index(board, entry)
+		if at < 0 || at < last {
+			t.Fatalf("history entry %s missing or out of order:\n%s", entry, board)
+		}
+		last = at
 	}
 }
