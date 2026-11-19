@@ -6,6 +6,8 @@ type: defect
 branch: main
 commit: 53967bd
 found: 2026-11-19
+claimed_by: 5b5d3e77-65ad-4b95-a4f4-99ac7cf90b0f
+claimed_at: 2026-11-19T23:10Z
 spec: [README "Running in a container"]
 bdr: [BDR-033]
 ---
