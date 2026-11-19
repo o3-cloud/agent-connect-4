@@ -245,7 +245,7 @@
    "title": "Isolate Agent Failures",
    "status": "Accepted",
    "outcomes": "",
-   "issue": "open",
+   "issue": "closed",
    "acDone": 3,
    "acTotal": 3,
    "satisfied": true
@@ -313,10 +313,10 @@
   {
    "bdr": "BDR-032",
    "title": "Structured Operational Logs",
-   "status": "Proposed",
+   "status": "Accepted",
    "outcomes": "",
    "issue": "closed",
-   "acDone": 0,
+   "acDone": 3,
    "acTotal": 3,
    "satisfied": true
   },
@@ -340,7 +340,7 @@
   },
   {
    "label": "Collected",
-   "value": "2026-11-19T14:52:49Z"
+   "value": "2026-11-19T17:25:59Z"
   }
  ]
 }
