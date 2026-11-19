@@ -34,7 +34,7 @@ are covered by BDR-006, BDR-011 and BDR-018.
 | [012](012-idempotent-move-retry.md) | Idempotent Move Retries | Accepted |
 | [013](013-authenticate-agent-operations.md) | Authenticate Agent Operations and Protect Credentials | Accepted |
 | [014](014-rate-limit-clients.md) | Rate-Limit Excess Requests Per Client | Accepted |
-| [015](015-structured-errors.md) | Structured, Machine-Readable Errors | Proposed |
+| [015](015-structured-errors.md) | Structured, Machine-Readable Errors | Accepted |
 | [016](016-move-history.md) | Ordered Move History | Accepted |
 | [017](017-replay-completed-game.md) | Replay a Completed Game Deterministically | Accepted |
 | [018](018-survive-server-restart.md) | Preserve Games Across Server Restarts | Proposed |
@@ -50,7 +50,7 @@ are covered by BDR-006, BDR-011 and BDR-018.
 | [028](028-browser-reconnect-recovery.md) | Recover After a Browser Disconnect | Proposed |
 | [029](029-responsive-layout.md) | Usable on Mobile and Desktop | Accepted |
 | [030](030-start-playing-quickly.md) | A Human Can Start Playing Within Seconds | Accepted |
-| [031](031-move-latency-and-capacity.md) | Move Latency and Concurrent Game Capacity | Proposed |
+| [031](031-move-latency-and-capacity.md) | Move Latency and Concurrent Game Capacity | Accepted |
 | [032](032-operational-event-logs.md) | Structured Operational Logs | Proposed |
 | [033](033-containerized-deployment.md) | Run From a Container With External Configuration | Proposed |
 
