@@ -6,6 +6,8 @@ bdr: BDR-025
 branch: main
 commit: 30cd082
 found: 2026-11-18
+claimed_by: 5b5d3e77-65ad-4b95-a4f4-99ac7cf90b0f
+claimed_at: 2026-11-19T15:08:30Z
 ---
 
 # BDR-025 not satisfied on main: Isolate Agent Failures
