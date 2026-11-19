@@ -6,6 +6,8 @@ type: defect
 branch: main
 commit: e517837
 found: 2026-11-18
+claimed_by: 5b5d3e77-65ad-4b95-a4f4-99ac7cf90b0f
+claimed_at: 2026-11-19T12:08:41Z
 spec: [CLI-001, interface/commands.md]
 bdr: [BDR-019, BDR-030]
 ---
