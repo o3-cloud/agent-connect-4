@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -219,5 +220,53 @@ func TestFailedJournalWriteChangesNothing(t *testing.T) {
 	registry := identity.NewRegistry().WithStore(&failingStore{})
 	if _, key, err := registry.Register("A", "agent"); err == nil || key != "" {
 		t.Fatalf("Register with a failing journal = %q, %v; want an error and no key", key, err)
+	}
+}
+
+// journal-fsync-serializes-all-games: appends from many goroutines share
+// fsyncs, yet every one returns only once durable, none is lost or
+// duplicated, sequence numbers have no gaps, and each writer's events keep
+// their order.
+func TestJournalConcurrentAppendsAreAllKeptInOrder(t *testing.T) {
+	const writers, each = 64, 5
+	path := filepath.Join(t.TempDir(), "arena.jsonl")
+	j, _ := openJournal(t, path, nil)
+	var wg sync.WaitGroup
+	errs := make(chan error, writers*each)
+	for w := range writers {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for i := range each {
+				errs <- j.Append("thing_happened", time.Now(), map[string]int{"w": w, "i": i})
+			}
+		}()
+	}
+	wg.Wait()
+	close(errs)
+	for err := range errs {
+		if err != nil {
+			t.Fatalf("Append: %v", err)
+		}
+	}
+	_ = j.Close()
+
+	_, events := openJournal(t, path, nil)
+	if len(events) != writers*each {
+		t.Fatalf("journal has %d events, want %d", len(events), writers*each)
+	}
+	next := make([]int, writers)
+	for k, e := range events {
+		var data map[string]int
+		if err := json.Unmarshal(e.Data, &data); err != nil {
+			t.Fatal(err)
+		}
+		if e.Seq != int64(k+1) {
+			t.Fatalf("event %d has seq %d", k, e.Seq)
+		}
+		if data["i"] != next[data["w"]] {
+			t.Fatalf("writer %d's event %d came where %d was due", data["w"], data["i"], next[data["w"]])
+		}
+		next[data["w"]]++
 	}
 }

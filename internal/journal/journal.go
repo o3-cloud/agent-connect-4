@@ -25,12 +25,22 @@ type Event struct {
 }
 
 // Journal appends events to one file. It is safe for concurrent use.
+//
+// Appends commit in groups: each line is written under the lock, and one
+// fsync then makes every line written so far durable, waking all the appends
+// it covered. Each Append still returns only once its own line is on disk,
+// but concurrent games share fsyncs instead of queueing for one each
+// (journal-fsync-serializes-all-games, BDR-031).
 type Journal struct {
-	mu   sync.Mutex
-	file *os.File
-	seq  int64
-	size int64
-	err  error // set when the file could not be restored after a failed write
+	mu      sync.Mutex
+	synced  *sync.Cond // signalled after every fsync
+	file    *os.File
+	seq     int64 // last sequence number written
+	size    int64 // bytes written
+	durable int64 // bytes known to be on disk
+	durSeq  int64 // last sequence number known to be on disk
+	syncing bool  // an fsync is in flight, without the lock
+	err     error // set once the journal can no longer be trusted
 }
 
 // Open opens or creates the journal at path and returns every event in it.
@@ -55,10 +65,12 @@ func Open(path string, logger *slog.Logger) (*Journal, []Event, error) {
 		_ = file.Close()
 		return nil, nil, fmt.Errorf("open journal: %w", err)
 	}
-	j := &Journal{file: file, size: size}
+	j := &Journal{file: file, size: size, durable: size}
+	j.synced = sync.NewCond(&j.mu)
 	if len(events) > 0 {
 		j.seq = events[len(events)-1].Seq
 	}
+	j.durSeq = j.seq
 	return j, events, nil
 }
 
@@ -126,7 +138,9 @@ func parse(text []byte, wantSeq int64) (Event, error) {
 
 // Append writes one event and returns once it is on disk (fsync). If the
 // write fails, the partial line is cut off again so later appends stay
-// readable; if even that fails, every later Append returns the error.
+// readable. If an fsync fails, nothing written since the last good fsync can
+// be trusted to be on disk: those lines are cut off, their appends fail, and
+// so does every later Append.
 func (j *Journal) Append(eventType string, at time.Time, data any) error {
 	payload, err := json.Marshal(data)
 	if err != nil {
@@ -145,14 +159,37 @@ func (j *Journal) Append(eventType string, at time.Time, data any) error {
 	if _, err := j.file.Write(line); err != nil {
 		return j.rollback(fmt.Errorf("journal %s: %w", eventType, err))
 	}
-	if err := j.file.Sync(); err != nil {
-		return j.rollback(fmt.Errorf("journal %s: %w", eventType, err))
-	}
 	j.seq++
 	j.size += int64(len(line))
+	mine := j.size
+
+	for j.durable < mine {
+		if j.err != nil {
+			return j.err
+		}
+		if j.syncing {
+			j.synced.Wait() // another append's fsync may cover this line too
+			continue
+		}
+		// Lead an fsync for everything written so far. Other appends keep
+		// writing meanwhile; the next fsync covers them.
+		j.syncing = true
+		target, targetSeq := j.size, j.seq
+		j.mu.Unlock()
+		err := j.file.Sync()
+		j.mu.Lock()
+		j.syncing = false
+		if err != nil {
+			j.failSync(fmt.Errorf("journal %s: %w", eventType, err))
+		} else {
+			j.durable, j.durSeq = target, targetSeq
+		}
+		j.synced.Broadcast()
+	}
 	return nil
 }
 
+// rollback cuts off a partly written line; the caller holds j.mu.
 func (j *Journal) rollback(cause error) error {
 	if err := j.file.Truncate(j.size); err != nil {
 		j.err = fmt.Errorf("journal unusable after a failed write: %w", errors.Join(cause, err))
@@ -165,10 +202,22 @@ func (j *Journal) rollback(cause error) error {
 	return cause
 }
 
+// failSync makes the journal unusable after a failed fsync and cuts off the
+// lines it did not cover, whose appends all fail; the caller holds j.mu.
+func (j *Journal) failSync(cause error) {
+	j.err = fmt.Errorf("journal unusable after a failed fsync: %w", cause)
+	if err := j.file.Truncate(j.durable); err == nil {
+		j.size, j.seq = j.durable, j.durSeq
+	}
+}
+
 // Close closes the journal file. Appends after Close fail.
 func (j *Journal) Close() error {
 	j.mu.Lock()
 	defer j.mu.Unlock()
+	for j.syncing {
+		j.synced.Wait()
+	}
 	if j.err == nil {
 		j.err = errors.New("journal is closed")
 	}
