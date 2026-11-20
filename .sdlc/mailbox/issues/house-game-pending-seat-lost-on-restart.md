@@ -7,6 +7,8 @@ type: defect
 bdr: BDR-018
 branch: main
 found: 2026-11-20
+claimed_by: 5b5d3e77-65ad-4b95-a4f4-99ac7cf90b0f
+claimed_at: 2026-11-20T05:09Z
 spec: [docs/adr/015-jsonl-journal-persistence.md, docs/adr/014-house-reference-agent.md]
 ---
 
