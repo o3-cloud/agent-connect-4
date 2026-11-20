@@ -4,7 +4,8 @@
 # waits for /healthz and checks that the browser UI's stylesheet is served.
 # Then it starts the image again with a different PORT and checks that the
 # server and the image's health check follow it, with no rebuild, and that an
-# invalid PORT stops the container with exit 2 (BDR-033).
+# invalid PORT stops the container with exit 2, and that games survive a
+# restart with the journal on a volume (BDR-018, BDR-033).
 set -eu
 
 image=${1:-connect4arena:local}
@@ -69,4 +70,41 @@ for bad in abc 70000; do
 	esac
 done
 
-echo "docker-smoke: $image serves /healthz and the stylesheet, follows PORT and rejects a bad PORT."
+# BDR-018, BDR-033 scenario 1: with the journal on a volume, a game and an
+# API key survive a container restart.
+volume="connect4arena-smoke-$$"
+docker volume create "$volume" >/dev/null
+start_journaled() {
+	container=$(docker run --detach --rm --read-only --cap-drop ALL \
+		--env ARENA_JOURNAL_PATH=/data/arena.jsonl --volume "$volume:/data" \
+		--publish "127.0.0.1:$port:8080" "$image")
+	if ! curl -fs --retry 30 --retry-all-errors --retry-delay 1 -o /dev/null "$base/healthz"; then
+		echo "docker-smoke: $image with a journal did not start" >&2
+		docker logs "$container" >&2
+		exit 1
+	fi
+}
+trap 'docker stop "$container" >/dev/null 2>&1; docker volume rm "$volume" >/dev/null' EXIT
+start_journaled
+key=$(curl -fsS -X POST -H 'Content-Type: application/json' \
+	-d '{"displayName":"Smoke","type":"agent"}' "$base/api/v1/agents" | sed -n 's/.*"apiKey":"\([^"]*\)".*/\1/p')
+game=$(curl -fsS -X POST -H "Authorization: Bearer $key" -H 'Content-Type: application/json' \
+	-d '{"mode":"agent_vs_agent"}' "$base/api/v1/games" | sed -n 's/.*"gameId":"\([^"]*\)".*/\1/p')
+if [ -z "$key" ] || [ -z "$game" ]; then
+	echo "docker-smoke: could not register an agent and create a game" >&2
+	exit 1
+fi
+docker stop "$container" >/dev/null
+start_journaled
+if ! curl -fs -o /dev/null "$base/api/v1/games/$game"; then
+	echo "docker-smoke: game $game did not survive a container restart" >&2
+	docker logs "$container" >&2
+	exit 1
+fi
+if ! curl -fs -o /dev/null -X POST -H "Authorization: Bearer $key" -H 'Content-Type: application/json' \
+	-d '{"mode":"agent_vs_agent"}' "$base/api/v1/games"; then
+	echo "docker-smoke: the API key did not survive a container restart" >&2
+	exit 1
+fi
+
+echo "docker-smoke: $image serves /healthz and the stylesheet, follows PORT, rejects a bad PORT and keeps games on a volume."

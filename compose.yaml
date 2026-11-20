@@ -5,8 +5,15 @@ services:
     image: connect4arena:local
     ports:
       - "8080:8080"
+    environment:
+      ARENA_JOURNAL_PATH: /data/arena.jsonl
+    volumes:
+      - arena-data:/data
     read_only: true
     security_opt:
       - no-new-privileges:true
     cap_drop:
       - ALL
+
+volumes:
+  arena-data:

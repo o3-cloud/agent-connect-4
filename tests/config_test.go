@@ -2,13 +2,16 @@ package tests
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"net"
+	"net/http"
 	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"connect4arena/internal/app"
 )
@@ -111,5 +114,76 @@ func TestArenaLogsServerStartedOnlyAfterBinding(t *testing.T) {
 	}
 	if !strings.Contains(stderr, port) {
 		t.Errorf("stderr = %q, want it to name port %s", stderr, port)
+	}
+}
+
+// BDR-018, ADR-015 verification: the real arena binary, stopped and started
+// again on the same ARENA_JOURNAL_PATH, still has the game and the API key.
+func TestArenaBinaryKeepsGamesInItsJournal(t *testing.T) {
+	if testing.Short() {
+		t.Skip("builds bin/arena")
+	}
+	bin := buildArena(t)
+	journalPath := filepath.Join(t.TempDir(), "arena.jsonl")
+	probe, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	port := strconv.Itoa(probe.Addr().(*net.TCPAddr).Port)
+	_ = probe.Close()
+	base := "http://127.0.0.1:" + port + "/api/v1"
+
+	start := func() *exec.Cmd {
+		t.Helper()
+		cmd := exec.Command(bin)
+		cmd.Env = []string{"PORT=" + port, "ARENA_JOURNAL_PATH=" + journalPath}
+		if err := cmd.Start(); err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() { _ = cmd.Process.Kill(); _ = cmd.Wait() })
+		for deadline := time.Now().Add(10 * time.Second); ; time.Sleep(20 * time.Millisecond) {
+			if resp, err := http.Get("http://127.0.0.1:" + port + "/healthz"); err == nil {
+				_ = resp.Body.Close()
+				return cmd
+			}
+			if time.Now().After(deadline) {
+				t.Fatal("arena did not start")
+			}
+		}
+	}
+	call := func(method, path, key, body string) (int, map[string]any) {
+		t.Helper()
+		request, _ := http.NewRequest(method, base+path, strings.NewReader(body))
+		request.Header.Set("Content-Type", "application/json")
+		if key != "" {
+			request.Header.Set("Authorization", "Bearer "+key)
+		}
+		resp, err := http.DefaultClient.Do(request)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer func() { _ = resp.Body.Close() }()
+		var out map[string]any
+		_ = json.NewDecoder(resp.Body).Decode(&out)
+		return resp.StatusCode, out
+	}
+
+	first := start()
+	_, agent := call(http.MethodPost, "/agents", "", `{"displayName":"Alpha","type":"agent"}`)
+	key, _ := agent["apiKey"].(string)
+	status, created := call(http.MethodPost, "/games", key, `{"mode":"agent_vs_agent"}`)
+	if status != http.StatusCreated {
+		t.Fatalf("create: %d %v", status, created)
+	}
+	gameID := created["gameId"].(string)
+	_ = first.Process.Kill() // no graceful shutdown: every change is already on disk
+	_ = first.Wait()
+
+	start()
+	if status, got := call(http.MethodGet, "/games/"+gameID, "", ""); status != http.StatusOK || got["gameId"] != gameID {
+		t.Fatalf("after restart, GET game = %d %v", status, got)
+	}
+	if status, _ := call(http.MethodPost, "/games", key, `{"mode":"agent_vs_agent"}`); status != http.StatusCreated {
+		t.Fatalf("after restart, the API key gets %d", status)
 	}
 }

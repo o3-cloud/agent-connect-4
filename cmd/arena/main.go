@@ -45,19 +45,30 @@ func main() {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	slog.SetDefault(logger)
 	cfg.Logger = logger
+	// ADR-015: with ARENA_JOURNAL_PATH, restore every game and agent first. A
+	// journal that cannot be read or replayed stops the server, naming the
+	// line or event.
+	handler, closeJournal, err := app.Open(cfg)
+	if err != nil {
+		_, _ = fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
 	server := &http.Server{
 		Addr:              addr,
-		Handler:           app.New(cfg),
+		Handler:           handler,
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 	// Bind first, so server_started is logged only for a server that listens.
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
+		_ = closeJournal()
 		_, _ = fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 	logger.Info("server started", "event", "server_started", "addr", server.Addr)
-	if err := server.Serve(listener); err != nil && err != http.ErrServerClosed {
+	err = server.Serve(listener)
+	_ = closeJournal()
+	if err != nil && err != http.ErrServerClosed {
 		_, _ = fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}

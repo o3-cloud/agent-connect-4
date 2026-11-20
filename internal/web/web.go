@@ -85,7 +85,11 @@ func (h handler) play(w http.ResponseWriter, r *http.Request) {
 		var key string
 		var err error
 		if agent, key, err = h.registry.Register(name, "human"); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			status := http.StatusBadRequest
+			if !errors.Is(err, identity.ErrInvalidAgent) {
+				status = http.StatusInternalServerError
+			}
+			http.Error(w, err.Error(), status)
 			return
 		}
 		http.SetCookie(w, &http.Cookie{Name: sessionCookie, Value: key, Path: "/", HttpOnly: true,

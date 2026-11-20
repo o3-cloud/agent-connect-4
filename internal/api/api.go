@@ -200,8 +200,11 @@ type registerOutput struct {
 
 func (h handlers) register(_ context.Context, in *registerInput) (*registerOutput, error) {
 	agent, key, err := h.registry.Register(in.Body.DisplayName, in.Body.Type)
-	if errors.Is(err, identity.ErrInvalidAgent) {
+	switch {
+	case errors.Is(err, identity.ErrInvalidAgent):
 		return nil, newErrorResponse(game.CodeInvalidArgument, err.Error())
+	case err != nil:
+		return nil, newErrorResponse(game.CodeInternal, "the agent could not be saved; try again")
 	}
 	return &registerOutput{Body: RegisteredAgent{
 		AgentID: agent.ID, DisplayName: agent.DisplayName, Type: agent.Type, APIKey: key,

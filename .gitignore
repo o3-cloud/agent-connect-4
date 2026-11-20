@@ -52,3 +52,6 @@ internal/web/static/app.css
 
 # Loop worktrees (docs/specs/practices/loop-coordination.md rule 9)
 .sdlc/worktree/
+
+# Local ARENA_JOURNAL_PATH journals (ADR-015)
+/arena.jsonl

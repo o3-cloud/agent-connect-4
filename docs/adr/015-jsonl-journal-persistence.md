@@ -84,6 +84,16 @@ The implementation:
 6. **Keeps Arena Bot's identity**: on start the house agent looks up its replayed `agent_registered` event before registering, so a restart doesn't create a new "Arena Bot" identity on every boot (backlog note, daf1200).
 7. **Defers compaction**. At current scale the journal is replayed in full on every start. If start-up time becomes a problem, snapshotting will be a later ADR.
 
+### Implementation notes (2026-11-20, issue-worker loop, session 5b5d3e77)
+
+How the code meets steps 1 to 7, where it differs from their wording:
+
+- **Store shape (step 1).** `game.Service` keeps its live state in memory in both modes, as before. `game.Store` is the interface the service journals through: `Append(type, at, data)`, which returns once the event is on disk. Without `ARENA_JOURNAL_PATH` there is no store, which is the memory-only mode the ADR calls `memstore`. Replay goes through `game.Service.Restore` and `identity.Registry.Restore`. `internal/journal` is the `journalstore`.
+- **Atomic moves (step 3).** Under the game's lock, the service checks the move, drops the disc on a copy of the board, appends `move_accepted` (column, `expectedVersion`, idempotency key and the resulting `version`) with fsync, and only then applies the copy. A failed write returns `INTERNAL` and changes nothing.
+- **No `game_finished` event.** A finished game is fully determined by its last `move_accepted` or `player_resigned`, so replay derives it, and the `version` check on every replayed move catches any divergence.
+- **Arena Bot (step 6).** The journal holds key hashes only, so the bot cannot reuse its old key. `agent_registered` carries `"house": true` for the bot, and on its first use after a start the registry issues it a new key for the same agent (`agent_key_reissued`). The arena then resumes the bot in every in-progress game it plays.
+- **Not restored.** A house game that was created but never joined before a restart loses its pending Arena Bot seat. It expires after 10 minutes anyway. Tracked in `house-game-pending-seat-lost-on-restart.md`.
+
 ## Consequences
 
 - Positive: BDR-018 and AT-010 become testable. A test can stop and restart the server on the same journal file and compare `GET /api/v1/games/{id}` before and after, then move with the old `expectedVersion`.

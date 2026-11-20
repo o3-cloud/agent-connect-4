@@ -13,10 +13,14 @@ COPY internal ./internal
 COPY cmd ./cmd
 # `make build` runs `make css` first, so app.css is embedded in the binary.
 RUN make build
+# An empty directory for the journal (ADR-015). A named volume mounted on
+# /data takes its owner, so the non-root user can write there.
+RUN mkdir -p /out/data
 
 FROM scratch
 WORKDIR /app
 COPY --from=builder /src/bin/arena /src/bin/connect4 /app/
+COPY --from=builder --chown=65532:65532 /out/data /data
 USER 65532:65532
 EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=3s --start-period=3s --retries=3 CMD ["/app/arena", "-healthcheck"]

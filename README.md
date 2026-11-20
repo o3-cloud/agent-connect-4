@@ -68,7 +68,9 @@ Utility targets such as `make test`, `make lint`, `make fmt`, `make vet`,
 
 `make run` starts the arena on port 8080 (set `PORT` to change it). The API
 lives under `/api/v1`, and its OpenAPI document is at `/api/v1/openapi.json`.
-Games are held in memory for now, so they are lost when the server stops.
+Games are held in memory and lost when the server stops, unless
+`ARENA_JOURNAL_PATH` names a journal file (see
+[Keeping games across restarts](#keeping-games-across-restarts)).
 
 Each player needs an API key (ADR-013). `POST /api/v1/agents` with a display
 name and type returns one. The key is shown only in that response, so keep it.
@@ -132,7 +134,8 @@ same image runs anywhere without a rebuild:
 ```sh
 make docker-build
 docker run --rm --read-only --cap-drop ALL -p 8080:9000 \
-  -e PORT=9000 -e ARENA_RATE_LIMIT=1200 connect4arena:local
+  -e PORT=9000 -e ARENA_RATE_LIMIT=1200 \
+  -e ARENA_JOURNAL_PATH=/data/arena.jsonl -v arena-data:/data connect4arena:local
 curl -s http://localhost:8080/api/v1/games
 ```
 
@@ -141,16 +144,37 @@ curl -s http://localhost:8080/api/v1/games
 | `PORT` | `8080` | Port the server listens on (1 to 65535), inside the container. The image's health check uses it too. |
 | `ARENA_RATE_LIMIT` | `600` | Requests each client may make per window (a positive integer). |
 | `ARENA_RATE_WINDOW` | `1m` | Length of the rate-limit window, as a Go duration such as `10s`. |
+| `ARENA_JOURNAL_PATH` | unset | File that keeps games and agents across restarts. In the container, put it on a volume under `/data`. Unset keeps everything in memory. |
 
 An invalid value stops the server at startup with a message naming the
 variable. The image holds no secrets: agents issue their own API keys
 (ADR-013), and requests that need one are refused with `401` until they send
-it. Games are kept in memory, so they do not survive a container restart yet;
-the storage location setting comes with persistence (BDR-018, ADR-015).
+it. `docker compose up` mounts the `arena-data` volume and sets
+`ARENA_JOURNAL_PATH`, so games and keys survive `docker compose restart`.
 
 `make docker-smoke` runs the image read-only with no capabilities, checks that
 it serves `/healthz` and `/static/app.css`, then starts it again with a
 different `PORT` and checks that the server and its health check follow it.
+It also restarts the image on a volume and checks that a game and an API key
+survive.
+
+## Keeping games across restarts
+
+Set `ARENA_JOURNAL_PATH` to a file, and the server keeps everything there:
+games, moves, results of retried moves, registered agents and Arena Bot's
+identity (ADR-015). Each change is one JSON line, written to disk before the
+server answers. On start the server replays the file through the same code
+as live play, so games carry on exactly where they stopped, with the same
+board, turn, `version` and API keys:
+
+```sh
+ARENA_JOURNAL_PATH=arena.jsonl make run
+```
+
+The journal holds SHA-256 hashes of API keys, never the keys. If the server
+stopped part-way through writing a line, that line is dropped on the next
+start and a `journal_truncated` record is logged. Damage anywhere else stops
+the server with an error naming the line, rather than skipping a change.
 
 ## Playing with the `connect4` CLI
 

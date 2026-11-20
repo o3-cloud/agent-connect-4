@@ -1,7 +1,9 @@
 // Package houseagent is Arena Bot, the house reference agent (ADR-014,
-// AGENT-007). It is an ordinary API client: it registers its own API key and
-// plays only through the public REST API, so it follows exactly the rules and
-// checks every external agent does. It never imports the game service.
+// AGENT-007). It is an ordinary API client: it holds an API key like any
+// agent and plays only through the public REST API, so it follows exactly the
+// rules and checks every external agent does. It never imports the game
+// service. Its key comes from the arena's registry (WithCredentials), so it
+// keeps one identity across restarts (ADR-015), or else from POST /agents.
 package houseagent
 
 import (
@@ -29,23 +31,38 @@ type Agent struct {
 	client *http.Client
 	base   string
 
-	once   sync.Once
-	key    string
-	regErr error
+	once        sync.Once
+	key         string
+	regErr      error
+	credentials func() (string, error)
 
 	mu      sync.Mutex
 	pending map[string]bool // house games whose bot has not joined yet
 }
 
+// Option configures an Agent.
+type Option func(*Agent)
+
+// WithCredentials makes the agent get its API key from issue instead of
+// registering through POST /api/v1/agents, so it keeps one identity across
+// restarts (ADR-015 step 6). issue is called once, on first use.
+func WithCredentials(issue func() (string, error)) Option {
+	return func(a *Agent) { a.credentials = issue }
+}
+
 // New returns an agent that reaches the API through handler in-process: each
 // request still passes through routing, authentication and validation, with
 // no network hop.
-func New(handler http.Handler) *Agent {
-	return &Agent{
+func New(handler http.Handler, opts ...Option) *Agent {
+	a := &Agent{
 		client:  &http.Client{Transport: inProcess{handler}},
 		base:    "http://arena/api/v1",
 		pending: map[string]bool{},
 	}
+	for _, opt := range opts {
+		opt(a)
+	}
+	return a
 }
 
 type inProcess struct{ handler http.Handler }
@@ -89,6 +106,12 @@ func (a *Agent) Seat(gameID string) {
 		slog.Warn("house agent did not join", "gameId", gameID, "error", err)
 		return
 	}
+	a.Resume(gameID, me)
+}
+
+// Resume plays gameID as me ("red" or "yellow") in the background until it
+// ends. After a restart it carries on the house games the bot was playing.
+func (a *Agent) Resume(gameID, me string) {
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
@@ -110,9 +133,14 @@ type gameState struct {
 	Version     int        `json:"version"`
 }
 
-// join registers Arena Bot once and takes the game's one open slot.
-func (a *Agent) join(gameID string) (string, error) {
+// authenticate gets Arena Bot's API key once: from its credentials, or by
+// registering through the API.
+func (a *Agent) authenticate() error {
 	a.once.Do(func() {
+		if a.credentials != nil {
+			a.key, a.regErr = a.credentials()
+			return
+		}
 		var out struct {
 			APIKey string `json:"apiKey"`
 		}
@@ -120,7 +148,15 @@ func (a *Agent) join(gameID string) (string, error) {
 		a.key = out.APIKey
 	})
 	if a.regErr != nil {
-		return "", fmt.Errorf("register: %w", a.regErr)
+		return fmt.Errorf("register: %w", a.regErr)
+	}
+	return nil
+}
+
+// join takes the game's one open slot.
+func (a *Agent) join(gameID string) (string, error) {
+	if err := a.authenticate(); err != nil {
+		return "", err
 	}
 	var state gameState
 	if err := a.call(http.MethodGet, "/games/"+gameID, nil, &state); err != nil {
@@ -139,6 +175,9 @@ func (a *Agent) join(gameID string) (string, error) {
 
 // play moves for me until the game ends.
 func (a *Agent) play(gameID, me string) error {
+	if err := a.authenticate(); err != nil {
+		return err
+	}
 	var state gameState
 	stop := time.Now().Add(gameLimit)
 	for time.Now().Before(stop) {

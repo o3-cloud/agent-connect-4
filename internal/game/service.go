@@ -6,7 +6,9 @@ package game
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 	"sync"
 	"time"
@@ -132,14 +134,23 @@ type replayKey struct {
 	playerID, key string
 }
 
-// Service holds games in memory. It is safe for concurrent use; each game has
-// its own lock, so moves are atomic per game (TURN-004).
+// Store persists the service's events (ADR-015). Append returns once the
+// event is durable; the service applies a change only after that, so a change
+// it reports is never lost and a failed write changes nothing.
+type Store interface {
+	Append(eventType string, at time.Time, data any) error
+}
+
+// Service holds games in memory and, with WithStore, journals every change.
+// It is safe for concurrent use; each game has its own lock, so moves are
+// atomic per game (TURN-004).
 type Service struct {
 	mu    sync.RWMutex
 	games map[string]*record
 	order []string
 	now   func() time.Time
 	log   *slog.Logger
+	store Store
 	// awaitingOpponent runs after a join that leaves a game with one player.
 	awaitingOpponent func(gameID string)
 }
@@ -163,8 +174,15 @@ func WithAwaitingOpponent(fn func(gameID string)) Option {
 	return func(s *Service) { s.awaitingOpponent = fn }
 }
 
+// WithStore makes the service append an event to store for every game
+// created, player joined, move accepted and resignation, before applying it
+// (ADR-015). Restore replays those events.
+func WithStore(store Store) Option {
+	return func(s *Service) { s.store = store }
+}
+
 // NewService returns an empty in-memory game service. Without WithLogger it
-// logs nothing.
+// logs nothing; without WithStore it keeps nothing across restarts.
 func NewService(opts ...Option) *Service {
 	s := &Service{
 		games: map[string]*record{},
@@ -188,34 +206,156 @@ const (
 	EventGameCompleted = "game_completed"
 )
 
+// Journaled event data (ADR-015). The event types are the matching log event
+// names: game_created, player_joined, move_accepted and player_resigned.
+type (
+	createdEvent struct {
+		GameID string `json:"gameId"`
+		Mode   Mode   `json:"mode"`
+	}
+	joinedEvent struct {
+		GameID      string      `json:"gameId"`
+		PlayerID    string      `json:"playerId"`
+		Disc        engine.Disc `json:"disc"`
+		DisplayName string      `json:"displayName"`
+		PlayerType  PlayerType  `json:"playerType"`
+	}
+	// movedEvent is one move with its idempotency key and the version it
+	// produced, so the move, its version bump and its replay record commit as
+	// one line (DATA-003).
+	movedEvent struct {
+		GameID          string `json:"gameId"`
+		PlayerID        string `json:"playerId"`
+		Column          int    `json:"column"`
+		ExpectedVersion int    `json:"expectedVersion"`
+		IdempotencyKey  string `json:"idempotencyKey,omitempty"`
+		Version         int    `json:"version"`
+	}
+	resignedEvent struct {
+		GameID   string `json:"gameId"`
+		PlayerID string `json:"playerId"`
+	}
+)
+
+// op says when a change happens and whether it is being replayed from the
+// journal. A replayed change is neither journaled again nor logged again.
+type op struct {
+	at     time.Time
+	replay bool
+}
+
+func (s *Service) live() op { return op{at: s.now()} }
+
+func (s *Service) logger(o op) *slog.Logger {
+	if o.replay {
+		return discard
+	}
+	return s.log
+}
+
+var discard = slog.New(slog.DiscardHandler)
+
+// persist journals a change before it is applied. A failed write is an
+// INTERNAL error and the change is not applied.
+func (s *Service) persist(o op, eventType, gameID string, data any) error {
+	if o.replay || s.store == nil {
+		return nil
+	}
+	if err := s.store.Append(eventType, o.at, data); err != nil {
+		s.log.Error("journal write failed", "event", "server_error", "gameId", gameID, "journalEvent", eventType, "error", err.Error())
+		return newError(CodeInternal, gameID, "the change could not be saved; it was not applied")
+	}
+	return nil
+}
+
+// Restore applies one journaled event, using the same code as live play
+// (ADR-015, DATA-005). It reports false for an event type that is not the
+// service's. Call it for every event, in order, before the service is used.
+func (s *Service) Restore(eventType string, at time.Time, data json.RawMessage) (bool, error) {
+	o := op{at: at, replay: true}
+	var err error
+	switch eventType {
+	case EventGameCreated:
+		var e createdEvent
+		if err = json.Unmarshal(data, &e); err == nil {
+			s.mu.Lock()
+			if s.games[e.GameID] != nil {
+				err = fmt.Errorf("game %s is created twice", e.GameID)
+			} else {
+				_, err = s.create(e.GameID, e.Mode, o)
+			}
+			s.mu.Unlock()
+		}
+	case EventPlayerJoined:
+		var e joinedEvent
+		if err = json.Unmarshal(data, &e); err == nil {
+			_, err = s.join(e.GameID, e.PlayerID, e.Disc, e.DisplayName, e.PlayerType, o)
+		}
+	case EventMoveAccepted:
+		var e movedEvent
+		if err = json.Unmarshal(data, &e); err == nil {
+			var result MoveResult
+			var replayed bool
+			result, replayed, err = s.move(e.GameID, e.PlayerID, e.Column, e.ExpectedVersion, e.IdempotencyKey, o)
+			switch {
+			case err != nil:
+			case replayed:
+				err = fmt.Errorf("move in game %s reuses idempotency key %q", e.GameID, e.IdempotencyKey)
+			case result.Version != e.Version:
+				err = fmt.Errorf("move in game %s replays to version %d, journaled as %d", e.GameID, result.Version, e.Version)
+			}
+		}
+	case EventResigned:
+		var e resignedEvent
+		if err = json.Unmarshal(data, &e); err == nil {
+			_, err = s.resign(e.GameID, e.PlayerID, o)
+		}
+	default:
+		return false, nil
+	}
+	if err != nil {
+		return true, fmt.Errorf("replay %s: %w", eventType, err)
+	}
+	return true, nil
+}
+
 // Create starts a new game waiting for two players (GAME-001, GAME-002).
 func (s *Service) Create(mode Mode) (Game, error) {
 	if mode != ModeHumanVsAgent && mode != ModeAgentVsAgent {
 		return Game{}, newError(CodeInvalidArgument, "", "mode must be human_vs_agent or agent_vs_agent")
 	}
-	now := s.now()
-	rec := &record{
-		board: engine.NewBoard(),
-		game: Game{
-			Mode:       mode,
-			Status:     StatusWaiting,
-			LegalMoves: []int{},
-			Moves:      []Move{},
-			CreatedAt:  now,
-			UpdatedAt:  now,
-		},
-	}
-
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	id := newGameID()
 	for s.games[id] != nil {
 		id = newGameID()
 	}
-	rec.game.ID = id
+	return s.create(id, mode, s.live())
+}
+
+// create adds game id; the caller holds s.mu.
+func (s *Service) create(id string, mode Mode, o op) (Game, error) {
+	if mode != ModeHumanVsAgent && mode != ModeAgentVsAgent {
+		return Game{}, newError(CodeInvalidArgument, id, "mode must be human_vs_agent or agent_vs_agent")
+	}
+	if err := s.persist(o, EventGameCreated, id, createdEvent{GameID: id, Mode: mode}); err != nil {
+		return Game{}, err
+	}
+	rec := &record{
+		board: engine.NewBoard(),
+		game: Game{
+			ID:         id,
+			Mode:       mode,
+			Status:     StatusWaiting,
+			LegalMoves: []int{},
+			Moves:      []Move{},
+			CreatedAt:  o.at,
+			UpdatedAt:  o.at,
+		},
+	}
 	s.games[id] = rec
 	s.order = append(s.order, id)
-	s.log.Info("game created", "event", EventGameCreated, "gameId", id, "mode", string(mode))
+	s.logger(o).Info("game created", "event", EventGameCreated, "gameId", id, "mode", string(mode))
 	return rec.game.snapshot(), nil
 }
 
@@ -223,7 +363,7 @@ func (s *Service) Create(mode Mode) (Game, error) {
 // once both slots are filled (GAME-004). playerID comes from the caller's
 // credentials, never from the request body.
 func (s *Service) Join(gameID, playerID string, disc engine.Disc, displayName string, playerType PlayerType) (Game, error) {
-	joined, err := s.join(gameID, playerID, disc, displayName, playerType)
+	joined, err := s.join(gameID, playerID, disc, displayName, playerType, s.live())
 	if err != nil || joined.Status != StatusWaiting || s.awaitingOpponent == nil {
 		return joined, err
 	}
@@ -231,7 +371,7 @@ func (s *Service) Join(gameID, playerID string, disc engine.Disc, displayName st
 	return s.Get(gameID)
 }
 
-func (s *Service) join(gameID, playerID string, disc engine.Disc, displayName string, playerType PlayerType) (Game, error) {
+func (s *Service) join(gameID, playerID string, disc engine.Disc, displayName string, playerType PlayerType, o op) (Game, error) {
 	if disc != engine.Red && disc != engine.Yellow {
 		return Game{}, newError(CodeInvalidArgument, gameID, "disc must be red or yellow")
 	}
@@ -259,6 +399,11 @@ func (s *Service) join(gameID, playerID string, disc engine.Disc, displayName st
 		return Game{}, ruleError(CodeAlreadyJoined, g, "you already hold the "+string(other.Disc)+" slot in this game")
 	}
 
+	if err := s.persist(o, EventPlayerJoined, gameID, joinedEvent{
+		GameID: gameID, PlayerID: playerID, Disc: disc, DisplayName: displayName, PlayerType: playerType,
+	}); err != nil {
+		return Game{}, err
+	}
 	player := &Player{ID: playerID, Type: playerType, DisplayName: displayName, Disc: disc}
 	if disc == engine.Red {
 		g.Red = player
@@ -270,8 +415,8 @@ func (s *Service) join(gameID, playerID string, disc engine.Disc, displayName st
 		g.CurrentTurn = engine.Red
 		g.LegalMoves = rec.board.LegalMoves()
 	}
-	g.UpdatedAt = s.now()
-	s.log.Info("player joined", "event", EventPlayerJoined, "gameId", g.ID, "playerId", playerID,
+	g.UpdatedAt = o.at
+	s.logger(o).Info("player joined", "event", EventPlayerJoined, "gameId", g.ID, "playerId", playerID,
 		"disc", string(disc), "playerType", string(playerType), "status", string(g.Status))
 	return g.snapshot(), nil
 }
@@ -344,7 +489,7 @@ func (s *Service) Move(gameID, playerID string, column, expectedVersion int) (Mo
 // that recorded result without playing again, even if the game has moved on.
 // Rejected moves are not recorded, so a retry of one is evaluated afresh.
 func (s *Service) MoveWithKey(gameID, playerID string, column, expectedVersion int, key string) (MoveResult, error) {
-	result, replayed, err := s.move(gameID, playerID, column, expectedVersion, key)
+	result, replayed, err := s.move(gameID, playerID, column, expectedVersion, key, s.live())
 	switch {
 	case err != nil:
 		code := CodeInternal
@@ -375,7 +520,7 @@ func (s *Service) logCompleted(gameID string, winner engine.Disc, reason ResultR
 
 // move applies a move under the game's lock; replayed reports an idempotent
 // replay of an earlier accepted move.
-func (s *Service) move(gameID, playerID string, column, expectedVersion int, key string) (result MoveResult, replayed bool, err error) {
+func (s *Service) move(gameID, playerID string, column, expectedVersion int, key string, o op) (result MoveResult, replayed bool, err error) {
 	rec, err := s.lookup(gameID)
 	if err != nil {
 		return MoveResult{}, false, err
@@ -404,7 +549,9 @@ func (s *Service) move(gameID, playerID string, column, expectedVersion int, key
 		return MoveResult{}, false, ruleError(CodeStaleState, g, "expectedVersion does not match the current version; re-read the game state")
 	}
 
-	row, outcome, err := rec.board.Drop(column, mover.Disc)
+	// Drop on a copy, so a move whose journal write fails leaves no disc behind.
+	board := *rec.board
+	row, outcome, err := board.Drop(column, mover.Disc)
 	switch {
 	case errors.Is(err, engine.ErrInvalidColumn):
 		return MoveResult{}, false, ruleError(CodeInvalidColumn, g, "column must be an integer from 0 to 6")
@@ -414,7 +561,14 @@ func (s *Service) move(gameID, playerID string, column, expectedVersion int, key
 		return MoveResult{}, false, newError(CodeInternal, gameID, "the move could not be applied")
 	}
 
-	now := s.now()
+	if err := s.persist(o, EventMoveAccepted, gameID, movedEvent{
+		GameID: gameID, PlayerID: playerID, Column: column, ExpectedVersion: expectedVersion,
+		IdempotencyKey: key, Version: g.Version + 1,
+	}); err != nil {
+		return MoveResult{}, false, err
+	}
+	*rec.board = board
+	now := o.at
 	move := Move{
 		MoveNumber: len(g.Moves) + 1,
 		PlayerID:   playerID,
@@ -460,6 +614,10 @@ func (s *Service) move(gameID, playerID string, column, expectedVersion int, key
 // Resign ends playerID's in-progress game with the opponent as winner
 // (TURN-007, GAME-006). A player may resign whether or not it is their turn.
 func (s *Service) Resign(gameID, playerID string) (Game, error) {
+	return s.resign(gameID, playerID, s.live())
+}
+
+func (s *Service) resign(gameID, playerID string, o op) (Game, error) {
 	rec, err := s.lookup(gameID)
 	if err != nil {
 		return Game{}, err
@@ -478,15 +636,20 @@ func (s *Service) Resign(gameID, playerID string) (Game, error) {
 		return Game{}, ruleError(CodeGameNotStarted, g, "the game starts when both players have joined")
 	}
 
+	if err := s.persist(o, EventResigned, gameID, resignedEvent{GameID: gameID, PlayerID: playerID}); err != nil {
+		return Game{}, err
+	}
 	g.Status = StatusCompleted
 	g.CurrentTurn = engine.Empty
 	g.LegalMoves = []int{}
 	g.Winner = resigner.Disc.Opponent()
 	g.ResultReason = ReasonResignation
 	g.Version++
-	g.UpdatedAt = s.now()
-	s.log.Info("player resigned", "event", EventResigned, "gameId", g.ID, "playerId", playerID)
-	s.logCompleted(g.ID, g.Winner, g.ResultReason, len(g.Moves), g.Version)
+	g.UpdatedAt = o.at
+	if !o.replay {
+		s.log.Info("player resigned", "event", EventResigned, "gameId", g.ID, "playerId", playerID)
+		s.logCompleted(g.ID, g.Winner, g.ResultReason, len(g.Moves), g.Version)
+	}
 	return g.snapshot(), nil
 }
 

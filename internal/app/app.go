@@ -14,6 +14,7 @@ import (
 	"connect4arena/internal/game"
 	"connect4arena/internal/houseagent"
 	"connect4arena/internal/identity"
+	"connect4arena/internal/journal"
 	"connect4arena/internal/mcpserver"
 	"connect4arena/internal/oplog"
 	"connect4arena/internal/ratelimit"
@@ -24,6 +25,9 @@ import (
 type Config struct {
 	// Port is the TCP port the server listens on (PORT, default 8080).
 	Port int
+	// JournalPath is the event journal that keeps games and agents across
+	// restarts (ARENA_JOURNAL_PATH, ADR-015). Empty keeps them in memory only.
+	JournalPath string
 	// RateLimit is the number of API and MCP requests each client may make
 	// per RateWindow (SEC-007).
 	RateLimit  int
@@ -40,11 +44,12 @@ func DefaultConfig() Config {
 }
 
 // ConfigFromEnv reads PORT (1 to 65535), ARENA_RATE_LIMIT (requests per
-// window) and ARENA_RATE_WINDOW (a Go duration such as 10s), defaulting each
-// to DefaultConfig. Its errors name the variable, so the server can refuse to
+// window), ARENA_RATE_WINDOW (a Go duration such as 10s) and
+// ARENA_JOURNAL_PATH (a file path), defaulting each to DefaultConfig. Its errors name the variable, so the server can refuse to
 // start before it logs anything.
 func ConfigFromEnv(getenv func(string) string) (Config, error) {
 	cfg := DefaultConfig()
+	cfg.JournalPath = getenv("ARENA_JOURNAL_PATH")
 	if v := getenv("PORT"); v != "" {
 		n, err := strconv.Atoi(v)
 		if err != nil || n < 1 || n > 65535 {
@@ -74,28 +79,106 @@ func Handler() http.Handler {
 	return New(DefaultConfig())
 }
 
-// New returns the service's HTTP handler: REST under /api/v1 and MCP at /mcp,
-// both backed by one new in-memory game service and agent registry, and the
-// browser UI. Arena Bot (ADR-014) plays house games through the same REST API.
-// API and MCP requests are rate limited per client (SEC-007). Game events and
-// unexpected server errors go to cfg.Logger (NFR-006).
+// New returns an in-memory arena's HTTP handler; it ignores cfg.JournalPath.
+// See Open.
 func New(cfg Config) http.Handler {
+	cfg.JournalPath = ""
+	handler, _, _ := Open(cfg) // cannot fail without a journal
+	return handler
+}
+
+// Open returns the service's HTTP handler: REST under /api/v1 and MCP at
+// /mcp, both backed by one game service and agent registry, and the browser
+// UI. Arena Bot (ADR-014) plays house games through the same REST API. API
+// and MCP requests are rate limited per client (SEC-007). Game events and
+// unexpected server errors go to cfg.Logger (NFR-006).
+//
+// With cfg.JournalPath set, every change is journaled there before it takes
+// effect, and Open first restores the arena by replaying the journal through
+// the same code as live play (ADR-015); Arena Bot carries on its in-progress
+// games. Open fails if the journal cannot be read or does not replay.
+// closeJournal closes the journal.
+func Open(cfg Config) (handler http.Handler, closeJournal func() error, err error) {
 	logger := cfg.Logger
 	if logger == nil {
 		logger = slog.New(slog.DiscardHandler)
 	}
 	mux := http.NewServeMux()
-	bot := houseagent.New(mux)
-	// Arena Bot sits down before a human's join returns (ADR-014).
-	service := game.NewService(game.WithLogger(logger), game.WithAwaitingOpponent(bot.Seat))
 	registry := identity.NewRegistry()
+	bot := houseagent.New(mux, houseagent.WithCredentials(func() (string, error) {
+		_, key, err := registry.HouseKey(houseagent.DisplayName)
+		return key, err
+	}))
+	// Arena Bot sits down before a human's join returns (ADR-014).
+	opts := []game.Option{game.WithLogger(logger), game.WithAwaitingOpponent(bot.Seat)}
+	closeJournal = func() error { return nil }
+	var events []journal.Event
+	if cfg.JournalPath != "" {
+		var j *journal.Journal
+		if j, events, err = journal.Open(cfg.JournalPath, logger); err != nil {
+			return nil, nil, err
+		}
+		closeJournal = j.Close
+		opts = append(opts, game.WithStore(j))
+		registry.WithStore(j)
+	}
+	service := game.NewService(opts...)
+	if err := restore(service, registry, events); err != nil {
+		_ = closeJournal()
+		return nil, nil, fmt.Errorf("restore %s: %w", cfg.JournalPath, err)
+	}
+
 	api.Register(mux, service, registry, api.WithHouseOpponent(bot.Start))
 	web.Register(mux, service, registry, bot.Start)
 	mux.Handle(mcpserver.Path, mcpserver.Handler(service, registry))
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 	})
-	return oplog.Middleware(rateLimit(mux, ratelimit.New(cfg.RateLimit, cfg.RateWindow), registry, service), logger)
+	if cfg.JournalPath != "" {
+		resumed := resumeHouseGames(service, registry, bot)
+		logger.Info("journal restored", "event", "journal_restored", "path", cfg.JournalPath,
+			"events", len(events), "games", len(service.List()), "houseGamesResumed", resumed)
+	}
+	return oplog.Middleware(rateLimit(mux, ratelimit.New(cfg.RateLimit, cfg.RateWindow), registry, service), logger), closeJournal, nil
+}
+
+// restore replays the journal's events, in order, into the service and the
+// registry. An event neither recognises, or one that does not replay, stops
+// the restore: nothing is skipped silently.
+func restore(service *game.Service, registry *identity.Registry, events []journal.Event) error {
+	for _, e := range events {
+		handled, err := service.Restore(e.Type, e.At, e.Data)
+		if !handled && err == nil {
+			handled, err = registry.Restore(e.Type, e.Data)
+		}
+		switch {
+		case err != nil:
+			return fmt.Errorf("event seq %d: %w", e.Seq, err)
+		case !handled:
+			return fmt.Errorf("event seq %d: unknown event type %q", e.Seq, e.Type)
+		}
+	}
+	return nil
+}
+
+// resumeHouseGames restarts Arena Bot in every in-progress game it plays and
+// returns how many there were.
+func resumeHouseGames(service *game.Service, registry *identity.Registry, bot *houseagent.Agent) int {
+	house, ok := registry.House()
+	if !ok {
+		return 0
+	}
+	games, _ := service.ListByStatus(game.StatusInProgress)
+	resumed := 0
+	for _, g := range games {
+		for _, p := range []*game.Player{g.Red, g.Yellow} {
+			if p != nil && p.ID == house.ID {
+				bot.Resume(g.ID, string(p.Disc))
+				resumed++
+			}
+		}
+	}
+	return resumed
 }
 
 // rateLimit applies the limiter to API and MCP requests. A request with a
