@@ -1,7 +1,7 @@
 ---
 title: "`connect4 play --exec`: turn any program into an agent"
 status: proposed
-rank: 8
+rank: 6
 type: feature
 outcomes: [1, 3, 6]
 spec: [CLI-001..008, AGENT-006]
@@ -44,3 +44,7 @@ Outcome 6: an agent in minutes.
 ## Evidence (2026-11-19, 7e2e0a3)
 
 The same turn loop (read state, check whose turn it is, choose from `legalMoves`, submit with `expectedVersion`, sleep, repeat) now exists three times: the house agent (`internal/houseagent`, 25 ms poll), and the CLI and MCP agents in `tests/agent_match_test.go` (20 ms poll, "to stay inside the default rate limit"). Every external developer will write it a fourth time. `connect4 play --exec` would put the loop in one place that's tested, with retries on `STALE_STATE`, `Retry-After` handling, and later a switch to wait-for-turn, all done once.
+
+## Ranked (2026-11-20, 0cc40e1): 7 of 11 product ideas
+
+All 33 BDRs are accepted (5477d60), so ranks now follow the OUTCOMES.md release criteria rather than open BDRs. `connect4 play` would make "an agent in minutes" a single command, after onboarding and wait-for-turn.

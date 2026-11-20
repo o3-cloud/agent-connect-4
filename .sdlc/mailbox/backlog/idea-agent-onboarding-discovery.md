@@ -1,7 +1,7 @@
 ---
 title: "Agent onboarding: /llms.txt, /agents quickstart and an MCP how-to-play prompt"
 status: proposed
-rank: 9
+rank: 1
 type: feature
 outcomes: [1, 6]
 spec: [NFR-005, MCP-001]
@@ -43,3 +43,16 @@ Still missing on main, and the reason this idea stays open:
 
 The flow tells agents to "poll getGame". If `idea-wait-for-turn` is adopted, this text is one of the places to update.
 
+
+## Evidence (2026-11-19, abf73dc)
+
+`connect4 mcp` has shipped: a stdio MCP server that proxies to `/mcp` using `CONNECT4_API_KEY`, and `TestCLIServesMCPOverStdio` checks its `tools/list` against `/mcp`. Desktop and IDE agents now have a one-command setup, and the README shows the subprocess config. Two things follow for this idea:
+
+- The `/agents` page's MCP snippet should be the stdio form (`claude mcp add connect4 --env CONNECT4_API_KEY=… -- connect4 mcp --server <base>`), filled in with the server's own URL. Today that snippet lives only in the README, which a remote agent pointed at a base URL cannot see.
+- The `how_to_play` prompt and `connect4://rules` resource are still missing. Because the stdio bridge offers exactly the tools the arena lists, adding them to `/mcp` makes them reach stdio clients too, but only if the bridge forwards prompts and resources as well as tools. Check that when this is built.
+
+Rank stays 9.
+
+## Ranked (2026-11-20, 0cc40e1): 1 of 11 product ideas
+
+All 33 BDRs are accepted (5477d60), so ranks now follow the OUTCOMES.md release criteria rather than open BDRs. Outcome 1 starts with "an agent can *discover* how to play" and outcome 6 says "connect an agent in minutes". An agent given only a base URL still has no `/llms.txt`, `/agents` page or MCP how-to-play prompt. This is now the biggest gap between the accepted BDRs and the release criteria.

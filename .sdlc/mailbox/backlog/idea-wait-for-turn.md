@@ -1,7 +1,7 @@
 ---
 title: "Long-poll 'wait for my turn' for REST, CLI and MCP agents"
 status: proposed
-rank: 3
+rank: 2
 type: feature
 outcomes: [1, 3, 6]
 spec: [AGENT-004, LIVE-001, CLI-008, MCP-004]
@@ -72,3 +72,7 @@ Arena Bot still polls every 25 ms for its turns once it is seated. A general LIV
 ## Evidence (2026-11-19, 73aae0d)
 
 Another loop has claimed `bdr-028-browser-reconnect-recovery`. BDR-028 does not need this idea: the browser already refreshes every 1 s (`hx-trigger="every 1s"`), so reconnect recovery can be met by refetching state and checking the version before enabling moves. That leaves this idea's case to **agents** (REST, CLI, MCP), which still poll for their turn, plus BDR-027's 2 s live-update target, which polling already meets. Rank stays 3: it is about agent efficiency and "native to AI agents" (outcome 6), not a gap in a BDR. If the BDR-028 fix adds a version-aware state fetch, reuse it as the `?waitForVersion=` path here rather than building a second one.
+
+## Ranked (2026-11-20, 0cc40e1): 2 of 11 product ideas
+
+All 33 BDRs are accepted (5477d60), so ranks now follow the OUTCOMES.md release criteria rather than open BDRs. "Native to AI agents" (outcome 6): every REST, CLI and MCP agent still polls for its turn. Now that a journal exists, the event source can be the journal's append path.

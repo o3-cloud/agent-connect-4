@@ -1,7 +1,7 @@
 ---
 title: "Always-on showcase match so the dashboard is never empty"
 status: proposed
-rank: 16
+rank: 10
 type: feature
 outcomes: [4, 6]
 spec: [UI-001, UI-011, LIVE-002, LIVE-003]
@@ -31,3 +31,7 @@ This also gives free end-to-end coverage: if the showcase match stalls, live upd
 ## Ranked (2026-11-18): 16 of 16
 
 Nice first impression; needs the house agent and the UI.
+
+## Ranked (2026-11-20, 0cc40e1): 11 of 11 product ideas
+
+All 33 BDRs are accepted (5477d60), so ranks now follow the OUTCOMES.md release criteria rather than open BDRs. Nice for demos. It depends on reference agents (4).

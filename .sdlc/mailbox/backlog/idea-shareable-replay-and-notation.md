@@ -1,7 +1,7 @@
 ---
 title: "Shareable game links, step-through replay and compact move notation"
 status: proposed
-rank: 13
+rank: 8
 type: feature
 outcomes: [4]
 spec: [UI-010, UI-011, DATA-004, DATA-005]
@@ -43,3 +43,7 @@ What remains is smaller:
 
 This idea is now mainly about notation and sharing. Its rank (13) is unchanged.
 
+
+## Ranked (2026-11-20, 0cc40e1): 9 of 11 product ideas
+
+All 33 BDRs are accepted (5477d60), so ranks now follow the OUTCOMES.md release criteria rather than open BDRs. Replay is accepted (BDR-017). Notation, play/pause and link previews are polish.

@@ -45,3 +45,15 @@ Build alongside the walking skeleton; the prototype's test cases exist only on t
 ## Evidence (2026-11-18, eee9bc7)
 
 The walking skeleton landed. `tests/engine_test.go` writes its win, draw and full-column cases as inline Go literals (about 9 move sequences), and `tests/api_test.go` builds its own sequences again. There is still no `testdata/`. Moving these cases into shared fixtures now is a small change, and it gives the persistence, replay and contract tests the same cases to reuse.
+
+## Evidence (2026-11-20, 492da18)
+
+ADR-015 makes restore *replay the journal through `game.Service`*. That means a game's move sequence is now also its stored form, so these fixtures gain a fourth consumer: the restart test. For each fixture, play it on a temporary `ARENA_JOURNAL_PATH`, restart, and check that the restored game equals the fixture's `expect` (status, winner, `finalBoardText`, history). The torn-last-line case from the ADR's Verification is a cheap addition: append each fixture's journal cut at every byte offset of its last line and check that the restore keeps every complete move. Building the fixtures before or with BDR-018 gives that test its cases for free. Rank stays 4. It is the cheapest way to make the journal's "deterministic restore" claim (DATA-005, DATA-006) checkable across many games instead of one.
+
+## Evidence (2026-11-20, 41a8494)
+
+The journal has shipped with its own restart tests (version 5, completed and resigned games, idempotent retry, torn last line). So the note above is now about *breadth*: those tests restore a handful of hand-built games, and the fixtures would restore every win direction, the draw and each rejection through the same journal. Still worth doing, still rank 4. It is no longer on BDR-018's critical path.
+
+## Ranked (2026-11-20, 0cc40e1): 5 of 11 product ideas
+
+All 33 BDRs are accepted (5477d60), so ranks now follow the OUTCOMES.md release criteria rather than open BDRs. Breadth for the engine, the contract suite and the journal restore. No longer on any BDR's critical path.

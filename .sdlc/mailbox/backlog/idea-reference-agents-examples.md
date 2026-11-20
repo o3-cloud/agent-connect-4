@@ -1,7 +1,7 @@
 ---
 title: "examples/: Python REST agent, shell CLI agent and MCP agent config"
 status: proposed
-rank: 11
+rank: 3
 type: docs
 outcomes: [1, 3, 6]
 spec: [SPEC §19 examples/, SPEC §20 Phase 2 "Reference agents"]
@@ -38,3 +38,7 @@ Spec Phase 2; mostly falls out of ranks 4, 6 and 8.
 ## Evidence (2026-11-19, 7e2e0a3)
 
 BDR-024 scenario 1 is now tested (`tests/agent_match_test.go`): a CLI agent and an MCP agent each run in a goroutine and play a full game, reading only the game state. That proves the platform supports agents playing on their own. But those agents exist only as test code, and there is still no `examples/`. A developer looking for "my first agent" has nothing to copy. The test's agent loops are a good starting point for `examples/shell-cli-agent` and `examples/mcp-agent`, provided they are rewritten to run against a live server rather than an in-process handler.
+
+## Ranked (2026-11-20, 0cc40e1): 4 of 11 product ideas
+
+All 33 BDRs are accepted (5477d60), so ranks now follow the OUTCOMES.md release criteria rather than open BDRs. "Two *external* AI agents can compete autonomously" is a release criterion. Today only in-repo tests and Arena Bot show it, so runnable example agents outside the server are the proof a visitor can repeat.

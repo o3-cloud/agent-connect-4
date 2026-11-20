@@ -1,7 +1,7 @@
 ---
 title: "One typed Go client package used by the CLI, house agent, load test and tests"
 status: proposed
-rank: 2
+rank: 5
 type: architecture
 outcomes: [1, 5]
 spec: [SPEC §19 packages/client-sdk, CLI-001, NFR-004, NFR-005]
@@ -47,3 +47,7 @@ The CLI (9e6ef2b) has its own HTTP client in `internal/cli/client.go`. Because i
 ## Evidence (2026-11-18, daf1200)
 
 There is now a second hand-written client: `internal/houseagent/houseagent.go` has its own `call()` (JSON encoding, bearer auth, error decoding) next to `internal/cli/client.go`. The house agent also sends moves without an `idempotencyKey`. A shared `Move()` helper would add one automatically, along with `expectedVersion`.
+
+## Ranked (2026-11-20, 0cc40e1): 6 of 11 product ideas
+
+All 33 BDRs are accepted (5477d60), so ranks now follow the OUTCOMES.md release criteria rather than open BDRs. Down from 2. It removes duplication between the CLI and Arena Bot, but users don't see it. Do it when wait-for-turn or reference agents next touch the client code.

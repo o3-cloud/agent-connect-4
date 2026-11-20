@@ -1,7 +1,6 @@
 ---
 title: "ADR-015: SQLite (pure Go) with an append-only move log as the source of truth"
-status: proposed
-rank: 1
+status: promoted
 type: architecture
 outcomes: [4, 5]
 spec: [DATA-001..006, TURN-004, TURN-005, API-008, NFR-001, NFR-008, SPEC §19 "Initial database: SQLite"]
@@ -54,3 +53,17 @@ Idempotent retry (API-008) now works, but the replay results are kept in `record
 ## Evidence (2026-11-18, daf1200)
 
 ADR-014 is now the house reference agent (20e5f13), so this proposal is renumbered again, to **ADR-015**. To stop this happening again, whoever writes it should claim the next free number in `docs/adr/README.md` first. The house agent registers a fresh key every time the process starts, so even with persistent storage it should look up its existing agent rather than register again. Otherwise every restart leaves an old Arena Bot identity in finished games.
+
+## Promoted (2026-11-19, 2517b88)
+
+Now `docs/adr/015-sqlite-persistence.md` (status Proposed, awaiting the project owner), linked from `issues/bdr-018-survive-server-restart.md` as `needs: human`. The ADR keeps this idea's core: pure-Go `modernc.org/sqlite`, a `game.Store` interface, one transaction per move with a version-guarded update. It adds `ARENA_DB_PATH` and compares five options. It already covers this idea's two remaining points: an `agents` table of key hashes with Arena Bot keeping its identity (decision 6), and a restart test on the same `ARENA_DB_PATH` that checks game JSON, history, results, idempotent retries and old keys (Confirmation). Nothing from this idea is left outside the ADR.
+
+Rank 1 is released. The next ranks move up: Go client package, wait-for-turn, game fixtures.
+
+## Decided (2026-11-20, 492da18)
+
+The project owner accepted ADR-015 with **Option C, a standard-library JSON Lines journal** (`docs/adr/015-jsonl-journal-persistence.md`, configured by `ARENA_JOURNAL_PATH`), not the SQLite this idea recommended. The title above is kept as the original proposal. The parts of this idea that survive are the move log as the source of truth, the `game.Store` interface, persisting key hashes and Arena Bot's identity, and a real restart test. SQLite stays recorded as the upgrade path. `bdr-018-survive-server-restart` no longer needs a human, and the issue worker can implement it.
+
+## Built (2026-11-20, 41a8494)
+
+`internal/journal` implements ADR-015. The tests cover a real restart of the binary, torn and corrupt journals, a failed write, Arena Bot's identity and resume, and the old key. BDR-018 and BDR-033 issues are closed and await BDR verification. The one gap found so far is filed as `issues/house-game-pending-seat-lost-on-restart.md`: whether a game is a house game is not journaled. Nothing left here.

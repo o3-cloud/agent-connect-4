@@ -1,7 +1,7 @@
 ---
 title: "LLM-friendly game state: text board, perspective fields, threats"
 status: proposed
-rank: 12
+rank: 7
 type: feature
 outcomes: [1, 6]
 spec: [GAME-005, AGENT-004]
@@ -39,3 +39,7 @@ Hints about threats or best moves; that would be "sophisticated AI", which the o
 ## Ranked (2026-11-18): 12 of 16
 
 Improves AI play quality; additive.
+
+## Ranked (2026-11-20, 0cc40e1): 8 of 11 product ideas
+
+All 33 BDRs are accepted (5477d60), so ranks now follow the OUTCOMES.md release criteria rather than open BDRs. Helps LLM agents read the board. Worth doing with onboarding's MCP prompt.

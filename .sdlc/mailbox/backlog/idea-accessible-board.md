@@ -1,7 +1,7 @@
 ---
 title: "Accessible board: keyboard play, screen-reader move announcements, colour-blind discs"
 status: proposed
-rank: 14
+rank: 9
 type: feature
 outcomes: [2, 6]
 spec: [UI-003, UI-006, UI-007, UI-013]
@@ -35,3 +35,7 @@ Outcome 2 for all humans; do with the UI phase.
 ## Evidence (2026-11-18, 925cd38)
 
 The first browser UI has started on this: the status line is an `aria-live="polite"` region, and each column button has `aria-label="Drop a disc in column N"`. Still missing: arrow-key and number-key play, announcing each move (column, row, player) rather than only the status, a pattern as well as a colour on the discs, `prefers-reduced-motion`, and an axe-core check. With the 1-second polling swap, the live region may repeat itself every second. Check this with a screen reader once WebSocket updates replace the polling.
+
+## Ranked (2026-11-20, 0cc40e1): 10 of 11 product ideas
+
+All 33 BDRs are accepted (5477d60), so ranks now follow the OUTCOMES.md release criteria rather than open BDRs. "Anyone can play" (outcome 2). Not a release criterion on its own, but cheap to start.

@@ -1,7 +1,7 @@
 ---
 title: "Arena load test: 100 concurrent agent-vs-agent games in CI"
 status: proposed
-rank: 12
+rank: 11
 type: quality
 outcomes: [5]
 spec: [NFR-002, NFR-003, AGENT-005, TURN-004]
@@ -46,3 +46,13 @@ BDR-031 is accepted. The BDR verify loop ran a one-off black-box test against `b
 
 What's left of this idea is a *repeatable* check. The run's harness isn't committed, so nothing catches a regression later. Two cases matter most: SQLite persistence (ADR-015) adding a transaction to every move, and the event bus replacing polling. Committing the harness as `cmd/arena-load` and running a short version in CI covers both. That makes it a hardening task, not a gap in the MUST requirements, so it moves from rank 5 to rank 12.
 
+
+## Ranked (2026-11-20, 0cc40e1): 3 of 11 product ideas
+
+All 33 BDRs are accepted (5477d60), so ranks now follow the OUTCOMES.md release criteria rather than open BDRs. Up from 12. A manual 100-game run found that the journal broke BDR-031's p95 on macOS by 2.5× (507 ms, `journal-fsync-serializes-all-games`, fixed in c2cf04f). That is the second time a one-off script caught what no committed check would. A committed `cmd/arena-load` with a short CI run, plus server-side request durations in the oplog (that issue's note), keeps BDR-031 true as storage changes.
+
+## Evidence (2026-11-20, aaa4cfa)
+
+The server now times each REST move request in the oplog, which closes `bdr-031-latency-not-measured-at-server`. The ranking note above asked for exactly that. The committed harness can now report BDR-031's p95 *as measured at the server*, from the oplog, rather than estimating it from the client. **Correction:** the ranking note above said no committed check exists. That was wrong. `tests/load_test.go` `TestJournaledConcurrentGamesMeetMoveLatency` was committed with the group-commit fix (c2cf04f). It plays 100 concurrent journaled games through REST on every full `make check` (skipped under `-short`), and it now asserts p95 both at the client and at the server. That *is* this idea's repeatable check.
+
+What's left is narrow: a black-box run against the real binary or container (the in-process `httptest` server skips the network, the Docker volume and the platform fsync cost that caused the macOS regression), and agents over CLI and MCP rather than REST only. That is hardening, not a gap. **Rank moves from 3 to 11 (last)**, and ideas 4–11 each move up one rank.
