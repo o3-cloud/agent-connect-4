@@ -7,7 +7,7 @@
    "cadence": "hourly at :53 (cron 864309da)",
    "job": "cron 864309da",
    "status": "running",
-   "lastSeen": "2026-11-20 00:52 UTC",
+   "lastSeen": "2026-11-20 01:52 UTC",
    "detail": "54 issues, 117/127 criteria tracked"
   },
   {
@@ -17,7 +17,7 @@
    "cadence": "hourly at :25 (cron 979cf690)",
    "job": "cron 979cf690",
    "status": "running",
-   "lastSeen": "2026-11-20 00:24 UTC",
+   "lastSeen": "2026-11-20 01:25 UTC",
    "detail": "44 issues filed, 41 closed"
   },
   {
@@ -27,7 +27,7 @@
    "cadence": "hourly at :14 (cron e6a165aa)",
    "job": "cron e6a165aa",
    "status": "running",
-   "lastSeen": "2026-11-20 00:14 UTC",
+   "lastSeen": "2026-11-20 01:14 UTC",
    "detail": "28 backlog ideas, 6 decided"
   },
   {
@@ -37,7 +37,7 @@
    "cadence": "hourly at :08 (cron 091de025)",
    "job": "cron 091de025",
    "status": "running",
-   "lastSeen": "2026-11-20 00:08 UTC",
+   "lastSeen": "2026-11-20 01:08 UTC",
    "detail": "5 issues filed, 5 closed"
   },
   {
@@ -47,7 +47,7 @@
    "cadence": "hourly at :28 (cron b1907dfa)",
    "job": "cron b1907dfa",
    "status": "running",
-   "lastSeen": "2026-11-20 00:27 UTC",
+   "lastSeen": "2026-11-20 01:28 UTC",
    "detail": "Cron 7 * * * * fires at :28 per CronList (scheduler offset). 21 minutes from the :07 Improvement loop, which also writes the backlog. A :47 job was tried and fired at :08, so it was removed. Claims backlog items before editing (rules 6-8). expires is approximate (job created about 10:05 local)."
   }
  ],
@@ -60,7 +60,7 @@
   },
   {
    "label": "Collected",
-   "value": "2026-11-20T00:52:53Z"
+   "value": "2026-11-20T01:52:56Z"
   }
  ]
 }
