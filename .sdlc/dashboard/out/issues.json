@@ -497,6 +497,22 @@
    "claimedAt": ""
   },
   {
+   "id": "bdr-031-latency-not-measured-at-server",
+   "title": "BDR-031 AC-1 asks for move latency measured at the server, but the server records none",
+   "status": "closed",
+   "source": "loop-run",
+   "bdr": "[BDR-031, BDR-032]",
+   "branch": "main",
+   "found": "2026-11-20",
+   "closedApprox": "2026-11-20",
+   "acDone": 0,
+   "acCriteriaDone": 0,
+   "acTotal": 0,
+   "hitl": false,
+   "claimedBy": "",
+   "claimedAt": ""
+  },
+  {
    "id": "bdr-031-move-latency-and-capacity",
    "title": "BDR-031 not satisfied on main: Move Latency and Concurrent Game Capacity",
    "status": "closed",
@@ -922,7 +938,7 @@
   },
   {
    "label": "Collected",
-   "value": "2026-11-20T08:52:55Z"
+   "value": "2026-11-20T09:52:51Z"
   }
  ]
 }
