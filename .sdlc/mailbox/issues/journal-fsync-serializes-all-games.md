@@ -1,14 +1,13 @@
 ---
 title: "With a journal on macOS, 100 concurrent games miss BDR-031's 200 ms p95: one global fsync queue"
-status: open
+status: closed
 priority: 4
 source: bdr-verification
 type: performance
 branch: main
 commit: 1af633c
 found: 2026-11-20
-claimed_by: 5b5d3e77-65ad-4b95-a4f4-99ac7cf90b0f
-claimed_at: 2026-11-20T04:10Z
+closed: 2026-11-20
 spec: [docs/adr/015-jsonl-journal-persistence.md]
 bdr: [BDR-031, BDR-018]
 ---
@@ -37,3 +36,22 @@ The documented container deployment meets BDR-031 AC-1 (p95 ≤ 200 ms). A devel
 Group commit: write each line under the lock, then let a single syncer flush everything written so far and wake all waiters whose line it covered. Each append still returns only after its line is on disk (ADR-015 step 3), but one fsync covers many games' moves. Add a benchmark or test that runs 100 concurrent games with a journal and asserts p95 at the server.
 
 Note: the server logs no per-request duration, so BDR-031's "measured at the server" can only be approximated from the client on localhost.
+
+## Resolution
+
+Group commit, as suggested. Each append writes its line under the journal's lock. One append then leads an fsync, taken without the lock, that covers every line written so far and wakes all the appends it covered. Each `Append` still returns only once its own line is on disk (ADR-015 step 3). If an fsync fails, the lines it did not cover are cut off, their appends fail, and the journal refuses further writes, because the kernel may have dropped those pages.
+
+- `TestJournaledConcurrentGamesMeetMoveLatency`: 100 games and 1,000 journaled moves through the HTTP API, asserting p95 ≤ 200 ms. It was red at 535 ms and passes at 23 ms (39 ms under `-race`).
+- `TestJournalConcurrentAppendsAreAllKeptInOrder`: 64 writers × 5 appends. None is lost or duplicated, sequence numbers have no gaps, and each writer's order holds.
+- `make check` PASS, 89.5%.
+
+Black-box on this Mac, 100 games × 10 moves against `bin/arena` with `ARENA_JOURNAL_PATH`:
+
+| Build | p50 | p95 | wall |
+|-------|----:|----:|-----:|
+| main | 485.9 ms | 557.7 ms | 4.89 s |
+| this fix | 13.4 ms | 23.1 ms | 0.18 s |
+
+After a restart, all 100 games are back at version 10, with 1,000 `move_accepted` lines.
+
+Not done: logging per-request duration at the server, which the issue's note mentions. Measurements are still client-side on localhost.
