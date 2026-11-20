@@ -8,6 +8,7 @@ branch: main
 commit: 1af633c
 found: 2026-11-20
 closed: 2026-11-20
+fixed_in: c2cf04f
 spec: [docs/adr/015-jsonl-journal-persistence.md]
 bdr: [BDR-031, BDR-018]
 ---
