@@ -37,7 +37,7 @@ are covered by BDR-006, BDR-011 and BDR-018.
 | [015](015-structured-errors.md) | Structured, Machine-Readable Errors | Accepted |
 | [016](016-move-history.md) | Ordered Move History | Accepted |
 | [017](017-replay-completed-game.md) | Replay a Completed Game Deterministically | Accepted |
-| [018](018-survive-server-restart.md) | Preserve Games Across Server Restarts | Proposed |
+| [018](018-survive-server-restart.md) | Preserve Games Across Server Restarts | Accepted |
 | [019](019-cli-play-and-json-output.md) | Play Through the `connect4` CLI With Machine-Readable Output | Accepted |
 | [020](020-cli-watch-game.md) | Watch a Game From the CLI | Accepted |
 | [021](021-mcp-tools.md) | Play Through MCP Tools | Accepted |
@@ -52,7 +52,7 @@ are covered by BDR-006, BDR-011 and BDR-018.
 | [030](030-start-playing-quickly.md) | A Human Can Start Playing Within Seconds | Accepted |
 | [031](031-move-latency-and-capacity.md) | Move Latency and Concurrent Game Capacity | Accepted |
 | [032](032-operational-event-logs.md) | Structured Operational Logs | Accepted |
-| [033](033-containerized-deployment.md) | Run From a Container With External Configuration | Proposed |
+| [033](033-containerized-deployment.md) | Run From a Container With External Configuration | Accepted |
 
 ## Authoring
 
