@@ -1,13 +1,12 @@
 ---
 title: "BDR-018 not satisfied on main: Preserve Games Across Server Restarts"
-status: open
+status: closed
 source: bdr-verification
 bdr: BDR-018
 branch: main
 commit: 30cd082
 found: 2026-11-18
-claimed_by: 5b5d3e77-65ad-4b95-a4f4-99ac7cf90b0f
-claimed_at: 2026-11-20T03:10Z
+closed: 2026-11-20
 ---
 
 # BDR-018 not satisfied on main: Preserve Games Across Server Restarts
@@ -54,3 +53,20 @@ Once ADR-015 is accepted, the next issue-worker run implements it as the ADR des
 ## Decision (2026-11-20, project owner)
 
 ADR-015 is **Accepted with Option C**: an append-only JSON Lines journal written with the standard library, set by `ARENA_JOURNAL_PATH`, with no new dependency. This was the fallback the ADR offered, not Option A, which it had recommended. `needs: human` is cleared. The next issue-worker run implements the ADR's steps 1-6 in order (`game.Store`, `memstore`, `journalstore`, replay on start, torn-tail recovery, Arena Bot lookup), adds the restart test, and closes this issue. BDR-033 AC-2 then follows, using `ARENA_JOURNAL_PATH` on a volume.
+
+## Resolution
+
+ADR-015 (Option C) is implemented. With `ARENA_JOURNAL_PATH` set, every change is appended to a JSON Lines journal with fsync before it takes effect, and the server restores itself on start by replaying the journal through the same `game.Service` code as live play. That covers games, moves, idempotency results, agents' key hashes and Arena Bot's identity. Unset, the arena stays memory-only.
+
+- AC-1: after a restart, `GET /api/v1/games/{id}` is identical (board, players, `currentTurn`, `version`).
+- AC-2: the move history is identical.
+- AC-3: the player to move moves at the pre-restart `version` with the pre-restart API key. An idempotent retry of a pre-restart move returns its recorded result.
+- AC-4: connect-four and resignation results keep their winner and reason.
+
+Arena Bot keeps one identity and resumes its in-progress house games. A torn last line is dropped and logged as `journal_truncated`. Damage anywhere else stops start-up, naming the line or event.
+
+Tests (new, red before): `TestGamesSurviveARestart`, `TestCompletedGamesSurviveARestart`, `TestJournaledConcurrentMovesCommitOne`, `TestTornJournalRestoresAndAcceptsTheNextMove`, `TestJournalThatDoesNotReplayRefusesToStart`, `TestHouseAgentResumesAfterARestart`, `TestFailedJournalWriteChangesNothing`, the `TestJournal*` unit tests and `TestArenaBinaryKeepsGamesInItsJournal`. Five mutations were each caught. `make check` PASS, 89.7%. `make docker-smoke` PASS, including a container restart on a volume.
+
+Black-box against the real `bin/arena`: SIGKILL at version 5, then restart. The game JSON and history were byte-identical, and yellow's move at `expectedVersion` 5 returned 200. Arena Bot replied in its house game after the restart. A torn tail was dropped and logged, and a corrupted line 3 exited 1 naming the line. The journal held no `c4_` keys.
+
+Follow-up: `house-game-pending-seat-lost-on-restart.md`.

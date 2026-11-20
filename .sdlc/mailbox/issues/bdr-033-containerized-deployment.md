@@ -1,12 +1,12 @@
 ---
 title: "BDR-033 not satisfied on main: Run From a Container With External Configuration"
-status: open
+status: closed
 source: bdr-verification
 bdr: BDR-033
 branch: main
 commit: 30cd082
 found: 2026-11-18
-blocked_by: bdr-018-survive-server-restart
+closed: 2026-11-20
 ---
 
 # BDR-033 not satisfied on main: Run From a Container With External Configuration
@@ -56,3 +56,14 @@ Done without the storage decision:
 - AC-3: still met. Running the README example, `POST /api/v1/games` without a key returns `401`.
 
 Still open: the persistence location setting and "games survive a container restart". Both need ADR-015 accepted and BDR-018 implemented. Then add `ARENA_JOURNAL_PATH` (ADR-015, Option C, accepted 2026-11-20) to the README table (the test will require it) and extend the smoke test to restart the container with a mounted volume.
+
+## Resolution (2026-11-20, session 5b5d3e77)
+
+The persistence half is done with ADR-015:
+
+- AC-2: `ARENA_JOURNAL_PATH` sets the storage location with no rebuild. The image has a `/data` directory owned by its non-root user, so a named volume mounted there is writable. `compose.yaml` sets `ARENA_JOURNAL_PATH=/data/arena.jsonl` on the `arena-data` volume.
+- AC-1: the README's container table now lists `ARENA_JOURNAL_PATH`, and `TestREADMEDocumentsEveryServerSetting` requires it.
+- Scenario 1: `make docker-smoke` starts the read-only image on a volume, registers an agent and creates a game, then stops and starts the container again. The game is still there and the key still works.
+- AC-3: still met. The journal stores key hashes only, and the image holds no secrets.
+
+Implemented together with bdr-018, so it needed no separate claim.
