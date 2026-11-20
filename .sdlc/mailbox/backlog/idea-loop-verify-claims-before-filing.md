@@ -22,3 +22,7 @@ created: 2026-11-18
 
 - [ ] No new issue is filed without a `check:` command.
 - [ ] `main-toolchain-followups.md` is corrected (Renovate exists; check whether it covers the `toolchain` directive and Docker images).
+
+## Evidence (2026-11-19T20:14Z)
+
+At 19:25Z the BDR verify loop filed `browser-click-ignores-rendered-version` (BDR-028 AC-2) in `5b82a7c`. At that moment `bdr-028-browser-reconnect-recovery` was claimed by the issue worker, which had a worktree on `fix/bdr-028-stale-board-moves`. One minute later the worker merged `3e11fb6` and closed the new issue as a duplicate (`ef04467`). It was a duplicate filed for a BDR whose claim was in progress, so a 'skip BDRs with a live claim' check before filing would have prevented it.
