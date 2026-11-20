@@ -8,6 +8,7 @@ bdr: BDR-018
 branch: main
 found: 2026-11-20
 closed: 2026-11-20
+fixed_in: cb37d1d
 spec: [docs/adr/015-jsonl-journal-persistence.md, docs/adr/014-house-reference-agent.md]
 ---
 
