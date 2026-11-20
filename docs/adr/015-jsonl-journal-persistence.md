@@ -1,10 +1,10 @@
-# ADR-015: SQLite (Pure Go) With the Move Log as the Source of Truth
+# ADR-015: Append-Only JSON Lines Journal as the Source of Truth
 
 ## Status
 
-Proposed
+Accepted (2026-11-20, project owner)
 
-Drafted on 2026-11-19 by the issue-worker loop (session 5b5d3e77) for BDR-018. It needs the project owner's acceptance: no loop has been asked to decide persistence on the owner's behalf.
+Drafted on 2026-11-19 by the issue-worker loop (session 5b5d3e77) for BDR-018, recommending Option A. On 2026-11-20 the project owner chose Option C instead: a standard-library JSON Lines journal, with no new dependency.
 
 ## Context and Problem Statement
 
@@ -72,29 +72,33 @@ How should the arena persist games, moves, idempotency results and credentials?
 
 ## Decision Outcome
 
-Recommended option: **Option A, SQLite through `modernc.org/sqlite`**, because it is what SPEC §19 specifies. It gives DATA-003's single transaction without hand-written crash safety, and it keeps the CGO-free `scratch` image. Its cost is a larger dependency graph, which ADR-007's pinning and `govulncheck` gate already cover. Option C is the fallback if the owner wants no new dependencies.
+Chosen option: **Option C, an append-only JSON Lines event journal written with the standard library**. The project owner chose it over Option A. It adds no dependency (ADR-007), keeps the CGO-free `scratch` image, and makes the move log the source of truth literally: state on start is whatever replaying the journal through `game.Service` produces. The cost is that we own the crash safety a database would otherwise give us. The implementation and its tests must cover that explicitly. SQLite (Option A) is still the upgrade path if the journal outgrows itself.
 
-If accepted, the implementation:
+The implementation:
 
-1. **Extracts a `game.Store` interface** from `game.Service`. The current maps become `memstore`, used by tests and as the default when no database is configured. The service keeps the rules and the per-game locking, and the store keeps the data. Every existing test must still pass against `memstore`.
-2. **Adds `sqlstore`** behind the same interface, with the tables `games` (configuration, players, status, version, result, timestamps), `moves` (`game_id`, `move_number`, `player_id`, `column`, `row`, `created_at`, primary key `(game_id, move_number)`), `idempotency` (`game_id`, `player_id`, `key`, `result_json`) and `agents` (`agent_id`, `key_hash`, `display_name`, `type`, `created_at`). Only key hashes are stored, never keys (SEC-005).
-3. **Commits each move in one transaction**: insert into `moves`, run the version-guarded `UPDATE games`, and insert into `idempotency`. A guarded update that changes zero rows is `STALE_STATE` (DATA-003, TURN-006).
-4. **Derives boards by replaying `moves` through the engine** on load and caches them in memory. Restore (DATA-006) and replay (DATA-004, DATA-005) then share the live code path.
-5. **Is configured by `ARENA_DB_PATH`**: unset keeps memory-only behaviour for development and tests, and setting it enables SQLite in WAL mode. The compose file and README mount a volume for it (NFR-008, BDR-033 AC-2).
-6. **Keeps Arena Bot's identity**: the house agent looks up its existing agent before registering, so a restart doesn't leave a new "Arena Bot" identity for every boot (backlog note, daf1200).
+1. **Extracts a `game.Store` interface** from `game.Service`. The current maps become `memstore`, used by tests and as the default when no journal is configured. The service keeps the rules and the per-game locking, and the store keeps the data. Every existing test must still pass against `memstore`.
+2. **Adds `journalstore`** behind the same interface. It appends one JSON object per line to a single file. Each object has the fields `seq`, `at`, `type` and `data`. The event types are `game_created`, `player_joined`, `move_accepted` (which carries the idempotency key and the recorded result), `player_resigned`, `game_finished` and `agent_registered`. `agent_registered` stores only the key hash, never the key (SEC-005).
+3. **Makes each move one event, so it commits atomically**: the move, its version bump and its idempotency record are one line. `game.Service` checks `expectedVersion` under the per-game lock before appending, so a stale move is never written (DATA-003, TURN-006). The append is followed by `fsync`, and the HTTP response is sent only after `fsync` returns.
+4. **Restores by replaying the journal through the engine** on start, using the same code path as live play (DATA-004..006). If the last line is torn (no trailing newline, or invalid JSON), it is truncated away and the truncation is logged. Corruption anywhere else stops start-up with an error naming the line. The server never silently skips an event.
+5. **Is configured by `ARENA_JOURNAL_PATH`**. Leaving it unset keeps the memory-only behaviour for development and tests. The compose file and README mount a volume for it (NFR-008, BDR-033 AC-2).
+6. **Keeps Arena Bot's identity**: on start the house agent looks up its replayed `agent_registered` event before registering, so a restart doesn't create a new "Arena Bot" identity on every boot (backlog note, daf1200).
+7. **Defers compaction**. At current scale the journal is replayed in full on every start. If start-up time becomes a problem, snapshotting will be a later ADR.
 
 ## Consequences
 
-- Positive: BDR-018 and AT-010 become testable. A test can stop and restart the server on the same database file and compare `GET /api/v1/games/{id}` before and after, then move with the old `expectedVersion`.
+- Positive: BDR-018 and AT-010 become testable. A test can stop and restart the server on the same journal file and compare `GET /api/v1/games/{id}` before and after, then move with the old `expectedVersion`.
 - Positive: agents keep their API keys across deploys.
 - Positive: BDR-033 AC-2 (persistence location set by configuration) follows directly.
-- Negative: a new direct dependency, with a large transitive graph, to pin and keep current. Renovate and the CI `govulncheck` gate cover it.
+- Positive: no new dependency, and the journal doubles as an audit trail of every game.
+- Negative: crash safety (fsync on every append, recovery from a torn last line) is our code, and its tests are our responsibility.
+- Negative: a later move to SQL or PostgreSQL means writing an importer for the journal. A driver swap won't do it.
 - Negative: the store interface adds one layer between the service and its data, and the race tests must cover both stores.
-- Neutral: memory-only remains the default for `go test` and `make run` without `ARENA_DB_PATH`, so the developer experience doesn't change unless persistence is wanted.
+- Neutral: memory-only remains the default for `go test` and `make run` without `ARENA_JOURNAL_PATH`, so the developer experience doesn't change unless persistence is wanted.
 
 ## Verification
 
-- A restart test (BDR-018 Scenario 1, AT-010) runs the arena on a temporary `ARENA_DB_PATH`, plays to version 5, stops and restarts it, and checks that the game JSON, history and a completed game's result are identical. It then plays the move at `expectedVersion` 5.
-- The existing concurrency test (one move commits out of many concurrent submissions with the same `expectedVersion`) runs against `sqlstore` under `-race`.
+- A restart test (BDR-018 Scenario 1, AT-010) runs the arena on a temporary `ARENA_JOURNAL_PATH`, plays to version 5, stops and restarts it, and checks that the game JSON, history and a completed game's result are identical. It then plays the move at `expectedVersion` 5.
+- The existing concurrency test (one move commits out of many concurrent submissions with the same `expectedVersion`) runs against `journalstore` under `-race`.
+- A journal whose last line is cut off mid-object restores every complete event, logs the truncation, and accepts the next move. A journal corrupted mid-file refuses to start.
 - An idempotent retry after a restart returns the recorded result rather than playing again (BDR-012).
 - A key issued before the restart still authenticates after it.

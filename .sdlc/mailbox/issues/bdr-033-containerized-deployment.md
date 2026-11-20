@@ -55,4 +55,4 @@ Done without the storage decision:
 - AC-2, port half: `make docker-smoke` now starts the image with `PORT=9000` and checks that the API answers there and that the image's health check follows it. An invalid value (`ARENA_RATE_WINDOW=soon`) stops the container with exit 2 and a message naming the variable.
 - AC-3: still met. Running the README example, `POST /api/v1/games` without a key returns `401`.
 
-Still open: the persistence location setting and "games survive a container restart". Both need ADR-015 accepted and BDR-018 implemented. Then add `ARENA_DB_PATH` to the README table (the test will require it) and extend the smoke test to restart the container with a mounted volume.
+Still open: the persistence location setting and "games survive a container restart". Both need ADR-015 accepted and BDR-018 implemented. Then add `ARENA_JOURNAL_PATH` (ADR-015, Option C, accepted 2026-11-20) to the README table (the test will require it) and extend the smoke test to restart the container with a mounted volume.

@@ -25,7 +25,7 @@ ADRs extend that command interface and Make-based runner.
 | [012](012-tailwind-css.md) | Tailwind CSS for Styling | Accepted |
 | [013](013-self-issued-agent-api-keys.md) | Self-Issued API Keys for Agent Credentials | Accepted |
 | [014](014-house-reference-agent.md) | A House Reference Agent for Human vs Agent Games | Accepted |
-| [015](015-sqlite-persistence.md) | SQLite (Pure Go) With the Move Log as the Source of Truth | Proposed |
+| [015](015-jsonl-journal-persistence.md) | Append-Only JSON Lines Journal as the Source of Truth | Accepted |
 
 ## Authoring
 

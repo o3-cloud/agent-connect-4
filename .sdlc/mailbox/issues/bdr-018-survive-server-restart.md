@@ -6,7 +6,6 @@ bdr: BDR-018
 branch: main
 commit: 30cd082
 found: 2026-11-18
-needs: human
 ---
 
 # BDR-018 not satisfied on main: Preserve Games Across Server Restarts
@@ -46,6 +45,10 @@ Idempotency replay records (`record.replays` in `internal/game/service.go`, API-
 
 The Arena now exists, but everything it knows is in process memory: games, history, idempotency results and API keys. A restart loses all of it, so AC-1 to AC-4 still fail. Fixing this needs a storage choice that no ADR has made, and this loop has no mandate to make it for the owner.
 
-**Decision needed:** accept, amend or reject [ADR-015](../../../docs/adr/015-sqlite-persistence.md) (Proposed). It recommends SQLite through `modernc.org/sqlite`, which is pure Go, follows SPEC §19 and keeps the `CGO_ENABLED=0` `scratch` image. The move log is the source of truth, each move commits in one transaction, and `ARENA_DB_PATH` sets the location (unset means memory only). It also compares cgo SQLite, a stdlib JSON Lines journal (the fallback if no new dependency is wanted), bbolt and PostgreSQL.
+**Decision needed:** accept, amend or reject [ADR-015](../../../docs/adr/015-jsonl-journal-persistence.md) (Proposed). It recommends SQLite through `modernc.org/sqlite`, which is pure Go, follows SPEC §19 and keeps the `CGO_ENABLED=0` `scratch` image. The move log is the source of truth, each move commits in one transaction, and `ARENA_DB_PATH` sets the location (unset means memory only). It also compares cgo SQLite, a stdlib JSON Lines journal (the fallback if no new dependency is wanted), bbolt and PostgreSQL.
 
 Once ADR-015 is accepted, the next issue-worker run implements it as the ADR describes (Store interface, then `sqlstore`, then the restart test) and closes this issue. BDR-033 AC-2 (persistence location set by configuration) follows from the same work.
+
+## Decision (2026-11-20, project owner)
+
+ADR-015 is **Accepted with Option C**: an append-only JSON Lines journal written with the standard library, set by `ARENA_JOURNAL_PATH`, with no new dependency. This was the fallback the ADR offered, not Option A, which it had recommended. `needs: human` is cleared. The next issue-worker run implements the ADR's steps 1-6 in order (`game.Store`, `memstore`, `journalstore`, replay on start, torn-tail recovery, Arena Bot lookup), adds the restart test, and closes this issue. BDR-033 AC-2 then follows, using `ARENA_JOURNAL_PATH` on a volume.
