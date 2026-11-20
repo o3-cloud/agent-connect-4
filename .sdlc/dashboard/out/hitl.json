@@ -1,7 +1,7 @@
 {
  "rows": [
   {
-   "item": "6 uncommitted files in the main checkout: .sdlc/mailbox/backlog/idea-adr-persistence-sqlite-move-log.md, .sdlc/mailbox/backlog/idea-agent-onboarding-discovery.md, .sdlc/mailbox/backlog/idea-loop-isolate-working-trees.md, .sdlc/mailbox/backlog/idea-loop-mailbox-is-tracked-now.md ...",
+   "item": "3 uncommitted files in the main checkout: .sdlc/mailbox/backlog/idea-adr-persistence-sqlite-move-log.md, .sdlc/mailbox/backlog/idea-agent-onboarding-discovery.md, .sdlc/mailbox/backlog/idea-portable-game-fixtures.md",
    "kind": "Loop coordination",
    "ask": "Ask the owning loop to commit or park them on wip/<loop>; they are not counted as progress",
    "ref": "loop-coordination rule 11-12",
@@ -50,7 +50,7 @@
   },
   {
    "label": "Collected",
-   "value": "2026-11-20T02:52:57Z"
+   "value": "2026-11-20T03:52:53Z"
   }
  ]
 }

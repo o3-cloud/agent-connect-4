@@ -173,12 +173,12 @@
   {
    "bdr": "BDR-018",
    "title": "Preserve Games Across Server Restarts",
-   "status": "Proposed",
+   "status": "Accepted",
    "outcomes": "5",
    "issue": "open",
-   "acDone": 0,
+   "acDone": 4,
    "acTotal": 4,
-   "satisfied": false
+   "satisfied": true
   },
   {
    "bdr": "BDR-019",
@@ -323,12 +323,12 @@
   {
    "bdr": "BDR-033",
    "title": "Run From a Container With External Configuration",
-   "status": "Proposed",
+   "status": "Accepted",
    "outcomes": "",
-   "issue": "open",
-   "acDone": 0,
+   "issue": "closed",
+   "acDone": 3,
    "acTotal": 3,
-   "satisfied": false
+   "satisfied": true
   }
  ],
  "meta": [
@@ -340,7 +340,7 @@
   },
   {
    "label": "Collected",
-   "value": "2026-11-20T02:52:57Z"
+   "value": "2026-11-20T03:52:53Z"
   }
  ]
 }

@@ -40,8 +40,8 @@
    "outcome": 5,
    "name": "Reliable and fair",
    "bdrs": 6,
-   "bdrsSatisfied": 5,
-   "acDone": 21,
+   "bdrsSatisfied": 6,
+   "acDone": 25,
    "acTotal": 25,
    "backlogItems": 36
   },
@@ -64,7 +64,7 @@
   },
   {
    "label": "Collected",
-   "value": "2026-11-20T02:52:57Z"
+   "value": "2026-11-20T03:52:53Z"
   }
  ]
 }
