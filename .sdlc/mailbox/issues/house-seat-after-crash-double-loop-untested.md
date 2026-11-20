@@ -9,6 +9,7 @@ branch: main
 commit: b5317c5
 found: 2026-11-20
 closed: 2026-11-20
+fixed_in: fe90185
 spec: [docs/adr/014-house-reference-agent.md, docs/adr/015-jsonl-journal-persistence.md]
 ---
 
