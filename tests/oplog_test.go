@@ -363,3 +363,72 @@ func TestLogRecordsMCPMovesRejectedBeforeTheService(t *testing.T) {
 		}
 	}
 }
+
+// BDR-031 AC-1 measures move latency at the server: each REST move request,
+// accepted or not, leaves one move_request record with its status and how
+// long the server took, from receiving it to responding. Other requests leave
+// none. Like every record, it carries no credential (SEC-005).
+func TestMoveRequestsAreTimedAtTheServer(t *testing.T) {
+	a, sink := loggedArena(t)
+	a.start(t)
+	a.move(t, a.red, 3, 0, "").wantStatus(t, http.StatusOK)
+	a.move(t, a.yellow, 9, 1, "").wantStatus(t, http.StatusUnprocessableEntity)
+	a.anon.do(http.MethodGet, "/api/v1/games/"+a.gameID, nil).wantStatus(t, http.StatusOK)
+	a.anon.do(http.MethodGet, "/api/v1/games/"+a.gameID+"/moves", nil).wantStatus(t, http.StatusOK)
+
+	records := sink.wantEvents(t, a.gameID, "move_request", 2)
+	for i, want := range []int{http.StatusOK, http.StatusUnprocessableEntity} {
+		r := records[i]
+		if number(r["status"]) != want {
+			t.Errorf("move_request %d status = %v, want %d", i+1, r["status"], want)
+		}
+		if d, ok := r["durationMs"].(float64); !ok || d <= 0 || d > 1000 {
+			t.Errorf("move_request %d durationMs = %v, want a positive number of milliseconds", i+1, r["durationMs"])
+		}
+	}
+	if log := sink.String(); strings.Contains(log, a.red.token) || strings.Contains(log, a.yellow.token) {
+		t.Fatal("a move_request record contains a credential")
+	}
+}
+
+// A move refused by the rate limiter is a move request too, so it is timed.
+func TestRateLimitedMoveRequestsAreTimed(t *testing.T) {
+	a, sink := loggedArenaWith(t, func(cfg *app.Config) { cfg.RateLimit = 4 })
+	a.start(t)
+	for i := 0; a.move(t, a.red, 3, 0, "").status != http.StatusTooManyRequests; i++ {
+		if i == 10 {
+			t.Fatal("the rate limiter never refused a move")
+		}
+	}
+	records := sink.events(t, a.gameID, "move_request")
+	if len(records) == 0 {
+		t.Fatal("no move_request records")
+	}
+	if last := records[len(records)-1]; number(last["status"]) != http.StatusTooManyRequests {
+		t.Fatalf("last move_request status = %v, want 429", last["status"])
+	}
+}
+
+// A move request that panics is timed with the 500 the client got.
+func TestPanickingMoveRequestIsTimedAs500(t *testing.T) {
+	server, sink := serveLogged(t, func(http.ResponseWriter, *http.Request) {
+		panic(errors.New("boom"))
+	})
+	c := client{t: t, server: server}
+	c.do(http.MethodPost, "/api/v1/games/g_1/moves", map[string]any{"column": 3, "expectedVersion": 0}).
+		wantError(t, http.StatusInternalServerError, "INTERNAL")
+	c.do(http.MethodPost, "/api/v1/games/g_1/join", map[string]any{}).wantStatus(t, http.StatusInternalServerError)
+	records := sink.wantEvents(t, "g_1", "move_request", 1)
+	if number(records[0]["status"]) != http.StatusInternalServerError {
+		t.Fatalf("move_request status = %v, want 500", records[0]["status"])
+	}
+}
+
+// A handler that writes nothing still answers 200, and is timed as 200.
+func TestEmptyMoveResponseIsTimedAs200(t *testing.T) {
+	server, sink := serveLogged(t, func(http.ResponseWriter, *http.Request) {})
+	client{t: t, server: server}.do(http.MethodPost, "/api/v1/games/g_1/moves", map[string]any{}).wantStatus(t, http.StatusOK)
+	if records := sink.wantEvents(t, "g_1", "move_request", 1); number(records[0]["status"]) != http.StatusOK {
+		t.Fatalf("move_request status = %v, want 200", records[0]["status"])
+	}
+}

@@ -114,6 +114,13 @@ retry), `player_resigned`, `game_completed` and `server_error`. Every game
 record has a `gameId`; records name players by `agt_` ID and never contain API
 keys. For example, list rejected moves with `./bin/arena | jq 'select(.event == "move_rejected")'`.
 
+Each REST move request (`POST /api/v1/games/{gameId}/moves`) also leaves a
+`move_request` record with its HTTP `status` and `durationMs`, the time from the
+server receiving it to its response, so you can check move latency (BDR-031)
+from the server's own log. Accepted moves are the ones with status 200, for
+example `jq -s '[.[] | select(.event == "move_request" and .status == 200) | .durationMs] | sort | .[length * 95 / 100 | floor]'`
+gives their p95 in milliseconds.
+
 ## Playing in the browser
 
 `make run`, then open http://localhost:8080. Enter a name, choose red or
