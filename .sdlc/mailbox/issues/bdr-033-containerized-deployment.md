@@ -7,6 +7,7 @@ branch: main
 commit: 30cd082
 found: 2026-11-18
 closed: 2026-11-20
+fixed_in: 41a8494
 ---
 
 # BDR-033 not satisfied on main: Run From a Container With External Configuration
