@@ -9,6 +9,7 @@ branch: main
 commit: 3acdb0d
 found: 2026-11-20
 closed: 2026-11-20
+fixed_in: aaa4cfa
 spec: [SPEC.md NFR-002, SPEC.md NFR-006]
 ---
 
