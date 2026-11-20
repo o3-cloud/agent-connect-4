@@ -175,7 +175,7 @@
    "title": "Preserve Games Across Server Restarts",
    "status": "Accepted",
    "outcomes": "5",
-   "issue": "open",
+   "issue": "closed",
    "acDone": 4,
    "acTotal": 4,
    "satisfied": true
@@ -340,7 +340,7 @@
   },
   {
    "label": "Collected",
-   "value": "2026-11-20T04:52:52Z"
+   "value": "2026-11-20T05:52:51Z"
   }
  ]
 }

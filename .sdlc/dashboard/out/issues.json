@@ -643,12 +643,12 @@
   {
    "id": "house-game-pending-seat-lost-on-restart",
    "title": "A house game created but not yet joined loses its Arena Bot seat across a restart",
-   "status": "open",
+   "status": "closed",
    "source": "loop-run",
    "bdr": "BDR-018",
    "branch": "main",
    "found": "2026-11-20",
-   "closedApprox": "",
+   "closedApprox": "2026-11-20",
    "acDone": 0,
    "acCriteriaDone": 0,
    "acTotal": 0,
@@ -906,7 +906,7 @@
   },
   {
    "label": "Collected",
-   "value": "2026-11-20T04:52:52Z"
+   "value": "2026-11-20T05:52:51Z"
   }
  ]
 }
