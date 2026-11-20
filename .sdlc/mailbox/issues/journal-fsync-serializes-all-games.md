@@ -7,6 +7,8 @@ type: performance
 branch: main
 commit: 1af633c
 found: 2026-11-20
+claimed_by: 5b5d3e77-65ad-4b95-a4f4-99ac7cf90b0f
+claimed_at: 2026-11-20T04:10Z
 spec: [docs/adr/015-jsonl-journal-persistence.md]
 bdr: [BDR-031, BDR-018]
 ---
