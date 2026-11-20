@@ -1,7 +1,10 @@
 package tests
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -396,4 +399,48 @@ func TestHouseOfferIsJournaledWithTheGame(t *testing.T) {
 			t.Fatalf("a plain game's game_created line mentions house: %s", line)
 		}
 	}
+}
+
+// Arena Bot plays a house game it takes during start-up with one loop only.
+// Two loops would both send a move for the bot's turn; the service would
+// refuse the later one (NOT_YOUR_TURN or STALE_STATE) and log move_rejected.
+// A single loop moves only on fresh state, so it is never refused.
+func TestHouseBotSeatedAtStartUpPlaysOnce(t *testing.T) {
+	const key = "c4_restart-test-human-key"
+	hash := sha256.Sum256([]byte(key))
+	path := filepath.Join(t.TempDir(), "arena.jsonl")
+	writeJournal(t, path, time.Now(),
+		`"agent_registered","data":{"agentId":"agt_human","displayName":"Human","type":"human","keyHash":"`+hex.EncodeToString(hash[:])+`"}`,
+		`"game_created","data":{"gameId":"g_once","mode":"human_vs_agent","house":true}`,
+		`"player_joined","data":{"gameId":"g_once","playerId":"agt_human","disc":"red","displayName":"Human","playerType":"human"}`)
+	sink := &logSink{}
+	cfg := app.DefaultConfig()
+	cfg.JournalPath = path
+	cfg.Logger = slog.New(slog.NewJSONHandler(sink, nil))
+	handler, closeJournal, err := app.Open(cfg)
+	if err != nil {
+		t.Fatalf("app.Open: %v", err)
+	}
+	server := httptest.NewServer(handler)
+	t.Cleanup(func() { server.Close(); _ = closeJournal() })
+	a := &arena{server: server, anon: client{t: t, server: server}, gameID: "g_once",
+		red: client{t: t, server: server, token: key}}
+
+	state := waitFor(t, a, time.Second, func(s map[string]any) bool { return s["status"] == "in_progress" })
+	botMoves := 0
+	for botMoves < 6 && state["status"] == "in_progress" {
+		version := number(state["version"])
+		a.move(t, a.red, ints(state["legalMoves"])[0], version, "").wantStatus(t, http.StatusOK)
+		state = waitFor(t, a, time.Second, func(s map[string]any) bool {
+			return number(s["version"]) == version+2 || s["status"] == "completed"
+		})
+		if number(state["version"]) == version+2 {
+			botMoves++
+		}
+	}
+	if botMoves < 3 {
+		t.Fatalf("Arena Bot moved %d times, want at least 3 to tell one loop from two", botMoves)
+	}
+	time.Sleep(100 * time.Millisecond) // let a second loop, if any, send its stale move
+	sink.wantEvents(t, "g_once", "move_rejected", 0)
 }
