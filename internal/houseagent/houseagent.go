@@ -77,10 +77,22 @@ func (t inProcess) RoundTrip(r *http.Request) (*http.Response, error) {
 // takes the other slot when a player joins (see Seat), or gives up the game if
 // nobody joins within joinWait.
 func (a *Agent) Start(gameID string) {
+	a.Offer(gameID, time.Now())
+}
+
+// Offer makes Arena Bot the opponent in gameID, a house game created at
+// offeredAt, for what is left of joinWait from then. After a restart it
+// brings back the house games still waiting for a player, without giving
+// them a fresh joinWait. An offer whose joinWait has run out does nothing.
+func (a *Agent) Offer(gameID string, offeredAt time.Time) {
+	left := time.Until(offeredAt.Add(joinWait))
+	if left <= 0 {
+		return
+	}
 	a.mu.Lock()
 	a.pending[gameID] = true
 	a.mu.Unlock()
-	time.AfterFunc(joinWait, func() {
+	time.AfterFunc(left, func() {
 		a.mu.Lock()
 		delete(a.pending, gameID)
 		a.mu.Unlock()

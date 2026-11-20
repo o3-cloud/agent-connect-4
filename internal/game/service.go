@@ -91,6 +91,10 @@ type Game struct {
 	Moves        []Move
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
+	// House reports that Arena Bot was offered the other seat when the game
+	// was created (ADR-014). It is journaled with the game, so the offer
+	// survives a restart (ADR-015).
+	House bool
 }
 
 // MoveNumber returns the number of accepted moves.
@@ -212,6 +216,7 @@ type (
 	createdEvent struct {
 		GameID string `json:"gameId"`
 		Mode   Mode   `json:"mode"`
+		House  bool   `json:"house,omitempty"`
 	}
 	joinedEvent struct {
 		GameID      string      `json:"gameId"`
@@ -282,7 +287,7 @@ func (s *Service) Restore(eventType string, at time.Time, data json.RawMessage) 
 			if s.games[e.GameID] != nil {
 				err = fmt.Errorf("game %s is created twice", e.GameID)
 			} else {
-				_, err = s.create(e.GameID, e.Mode, o)
+				_, err = s.create(e.GameID, e.Mode, e.House, o)
 			}
 			s.mu.Unlock()
 		}
@@ -321,6 +326,17 @@ func (s *Service) Restore(eventType string, at time.Time, data json.RawMessage) 
 
 // Create starts a new game waiting for two players (GAME-001, GAME-002).
 func (s *Service) Create(mode Mode) (Game, error) {
+	return s.newGame(mode, false)
+}
+
+// CreateHouseGame starts a new human_vs_agent game whose other seat is
+// offered to Arena Bot (ADR-014). The offer is part of the game's
+// game_created event, so it is saved with the game in one step.
+func (s *Service) CreateHouseGame() (Game, error) {
+	return s.newGame(ModeHumanVsAgent, true)
+}
+
+func (s *Service) newGame(mode Mode, house bool) (Game, error) {
 	if mode != ModeHumanVsAgent && mode != ModeAgentVsAgent {
 		return Game{}, newError(CodeInvalidArgument, "", "mode must be human_vs_agent or agent_vs_agent")
 	}
@@ -330,15 +346,18 @@ func (s *Service) Create(mode Mode) (Game, error) {
 	for s.games[id] != nil {
 		id = newGameID()
 	}
-	return s.create(id, mode, s.live())
+	return s.create(id, mode, house, s.live())
 }
 
 // create adds game id; the caller holds s.mu.
-func (s *Service) create(id string, mode Mode, o op) (Game, error) {
+func (s *Service) create(id string, mode Mode, house bool, o op) (Game, error) {
 	if mode != ModeHumanVsAgent && mode != ModeAgentVsAgent {
 		return Game{}, newError(CodeInvalidArgument, id, "mode must be human_vs_agent or agent_vs_agent")
 	}
-	if err := s.persist(o, EventGameCreated, id, createdEvent{GameID: id, Mode: mode}); err != nil {
+	if house && mode != ModeHumanVsAgent {
+		return Game{}, newError(CodeInvalidArgument, id, "only a human_vs_agent game can have a house opponent")
+	}
+	if err := s.persist(o, EventGameCreated, id, createdEvent{GameID: id, Mode: mode, House: house}); err != nil {
 		return Game{}, err
 	}
 	rec := &record{
@@ -351,6 +370,7 @@ func (s *Service) create(id string, mode Mode, o op) (Game, error) {
 			Moves:      []Move{},
 			CreatedAt:  o.at,
 			UpdatedAt:  o.at,
+			House:      house,
 		},
 	}
 	s.games[id] = rec

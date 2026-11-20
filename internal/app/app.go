@@ -162,20 +162,33 @@ func restore(service *game.Service, registry *identity.Registry, events []journa
 }
 
 // resumeHouseGames restarts Arena Bot in every in-progress game it plays and
-// returns how many there were.
+// returns how many there were. It then offers the bot's seat again in every
+// house game still waiting for players (ADR-014), for what is left of the
+// offer, and seats the bot at once in a house game a player joined just
+// before the restart, before the bot could join.
 func resumeHouseGames(service *game.Service, registry *identity.Registry, bot *houseagent.Agent) int {
-	house, ok := registry.House()
-	if !ok {
-		return 0
-	}
-	games, _ := service.ListByStatus(game.StatusInProgress)
 	resumed := 0
-	for _, g := range games {
-		for _, p := range []*game.Player{g.Red, g.Yellow} {
-			if p != nil && p.ID == house.ID {
-				bot.Resume(g.ID, string(p.Disc))
-				resumed++
+	if house, ok := registry.House(); ok {
+		games, _ := service.ListByStatus(game.StatusInProgress)
+		for _, g := range games {
+			for _, p := range []*game.Player{g.Red, g.Yellow} {
+				if p != nil && p.ID == house.ID {
+					bot.Resume(g.ID, string(p.Disc))
+					resumed++
+				}
 			}
+		}
+	}
+	// After the resumes: seating the bot here starts its play, so the game
+	// must not be resumed a second time above.
+	waiting, _ := service.ListByStatus(game.StatusWaiting)
+	for _, g := range waiting {
+		if !g.House {
+			continue
+		}
+		bot.Offer(g.ID, g.CreatedAt)
+		if g.Red != nil || g.Yellow != nil {
+			bot.Seat(g.ID)
 		}
 	}
 	return resumed

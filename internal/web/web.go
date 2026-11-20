@@ -97,7 +97,7 @@ func (h handler) play(w http.ResponseWriter, r *http.Request) {
 	}
 	// Arena Bot takes the other slot inside Join, so the page we land on is
 	// ready for the first move (BDR-030 AC-3).
-	created, err := h.service.Create(game.ModeHumanVsAgent)
+	created, err := h.service.CreateHouseGame()
 	if err == nil {
 		h.house(created.ID)
 		_, err = h.service.Join(created.ID, agent.ID, disc, name, game.PlayerHuman)

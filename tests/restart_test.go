@@ -289,3 +289,111 @@ func TestHouseAgentResumesAfterARestart(t *testing.T) {
 		t.Fatal("the journal contains an API key")
 	}
 }
+
+// BDR-018, ADR-014: a house game that nobody has joined yet keeps its Arena
+// Bot seat across a restart, so the human who joins afterwards still gets the
+// bot as the opponent and the bot plays.
+func TestHouseSeatSurvivesARestartBeforeAnyoneJoins(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "arena.jsonl")
+	a, stop := newJournalArena(t, path)
+	created := a.red.do(http.MethodPost, "/api/v1/games", map[string]any{"mode": "human_vs_agent", "opponent": "house"}).
+		wantStatus(t, http.StatusCreated)
+	a.gameID = created.body["gameId"].(string)
+
+	stop()
+	server, _ := journalServer(t, path)
+	a.rebind(server)
+
+	state := a.red.do(http.MethodPost, "/api/v1/games/"+a.gameID+"/join",
+		map[string]any{"disc": "red", "displayName": "Human", "type": "human"}).wantStatus(t, http.StatusOK).body
+	if state["status"] != "in_progress" {
+		t.Fatalf("after the restart the house game is %v once the human joins, want in_progress", state["status"])
+	}
+	if name := state["players"].(map[string]any)["yellow"].(map[string]any)["displayName"]; name != "Arena Bot" {
+		t.Fatalf("yellow is %v, want Arena Bot", name)
+	}
+	a.move(t, a.red, 3, 0, "").wantStatus(t, http.StatusOK)
+	waitFor(t, a, time.Second, func(s map[string]any) bool { return number(s["version"]) == 2 })
+}
+
+// writeJournal writes events as journal lines (ADR-015), numbered from 1.
+func writeJournal(t *testing.T, path string, at time.Time, events ...string) {
+	t.Helper()
+	var lines strings.Builder
+	for i, e := range events {
+		fmt.Fprintf(&lines, `{"seq":%d,"at":%q,"type":%s}`+"\n", i+1, at.UTC().Format(time.RFC3339Nano), e)
+	}
+	if err := os.WriteFile(path, []byte(lines.String()), 0o600); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// A crash after a human takes the first seat of a house game but before
+// Arena Bot takes the second leaves a waiting game with one player; on
+// restart the bot takes the open seat.
+func TestHouseBotTakesTheSeatItMissedInACrash(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "arena.jsonl")
+	writeJournal(t, path, time.Now(),
+		`"game_created","data":{"gameId":"g_crash","mode":"human_vs_agent","house":true}`,
+		`"player_joined","data":{"gameId":"g_crash","playerId":"a_human","disc":"red","displayName":"Human","playerType":"human"}`)
+	server, _ := journalServer(t, path)
+	a := &arena{server: server, anon: client{t: t, server: server}, gameID: "g_crash"}
+
+	state := waitFor(t, a, time.Second, func(s map[string]any) bool { return s["status"] == "in_progress" })
+	if name := state["players"].(map[string]any)["yellow"].(map[string]any)["displayName"]; name != "Arena Bot" {
+		t.Fatalf("yellow is %v, want Arena Bot", name)
+	}
+}
+
+// Arena Bot gives up a house game nobody joins within 10 minutes; a restart
+// does not give the game a fresh 10 minutes.
+func TestExpiredHouseSeatIsNotOfferedAfterARestart(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "arena.jsonl")
+	writeJournal(t, path, time.Now().Add(-11*time.Minute),
+		`"game_created","data":{"gameId":"g_old","mode":"human_vs_agent","house":true}`)
+	server, _ := journalServer(t, path)
+	a := &arena{server: server, anon: client{t: t, server: server}, gameID: "g_old"}
+	a.red = register(t, server, "Alpha")
+
+	state := a.red.do(http.MethodPost, "/api/v1/games/g_old/join",
+		map[string]any{"disc": "red", "displayName": "Human", "type": "human"}).wantStatus(t, http.StatusOK).body
+	if state["status"] != "waiting" || state["players"].(map[string]any)["yellow"] != nil {
+		t.Fatalf("an expired house game was seated: status %v, players %v", state["status"], state["players"])
+	}
+}
+
+// Only human_vs_agent games have a house opponent; a journal that says
+// otherwise does not replay, so the arena refuses to start (ADR-015).
+func TestJournalWithAHouseAgentVsAgentGameRefusesToStart(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "arena.jsonl")
+	writeJournal(t, path, time.Now(),
+		`"game_created","data":{"gameId":"g_bad","mode":"agent_vs_agent","house":true}`)
+	cfg := app.DefaultConfig()
+	cfg.JournalPath = path
+	if _, _, err := app.Open(cfg); err == nil || !strings.Contains(err.Error(), "event seq 1") {
+		t.Fatalf("app.Open = %v, want an error naming event seq 1", err)
+	}
+}
+
+// The house offer is journaled with the game it belongs to, and only there.
+func TestHouseOfferIsJournaledWithTheGame(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "arena.jsonl")
+	a, stop := newJournalArena(t, path)
+	house := a.red.do(http.MethodPost, "/api/v1/games", map[string]any{"mode": "human_vs_agent", "opponent": "house"}).
+		wantStatus(t, http.StatusCreated).body["gameId"].(string)
+	plain := a.red.do(http.MethodPost, "/api/v1/games", map[string]any{"mode": "human_vs_agent"}).
+		wantStatus(t, http.StatusCreated).body["gameId"].(string)
+	stop()
+	raw, _ := os.ReadFile(path)
+	for _, line := range strings.Split(string(raw), "\n") {
+		if !strings.Contains(line, `"type":"game_created"`) {
+			continue
+		}
+		switch {
+		case strings.Contains(line, house) && !strings.Contains(line, `"house":true`):
+			t.Fatalf("the house game's game_created line has no house offer: %s", line)
+		case strings.Contains(line, plain) && strings.Contains(line, `"house"`):
+			t.Fatalf("a plain game's game_created line mentions house: %s", line)
+		}
+	}
+}

@@ -234,11 +234,15 @@ func (h handlers) create(_ context.Context, in *createInput) (*gameOutput, error
 	if in.Body.Opponent == "house" && (game.Mode(in.Body.Mode) != game.ModeHumanVsAgent || h.house == nil) {
 		return nil, newErrorResponse(game.CodeInvalidArgument, `"opponent": "house" is only available with mode human_vs_agent`)
 	}
-	created, err := h.service.Create(game.Mode(in.Body.Mode))
+	create := func() (game.Game, error) { return h.service.Create(game.Mode(in.Body.Mode)) }
+	if in.Body.Opponent == "house" {
+		create = h.service.CreateHouseGame
+	}
+	created, err := create()
 	if err != nil {
 		return nil, fromError(err)
 	}
-	if in.Body.Opponent == "house" {
+	if created.House {
 		h.house(created.ID)
 	}
 	return &gameOutput{Body: viewOf(created)}, nil
