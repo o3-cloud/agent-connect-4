@@ -1,28 +1,12 @@
 {
  "rows": [
   {
-   "item": "BDR-018 not satisfied on main: Preserve Games Across Server Restarts",
-   "kind": "Flagged issue",
-   "ask": "Decision requested in the issue",
-   "ref": "bdr-018-survive-server-restart",
-   "severity": "high",
-   "n": 1
-  },
-  {
-   "item": "Uncommitted BDR-034 draft in the main checkout blocks the BDR-028 acceptance merge",
-   "kind": "Flagged issue",
-   "ask": "Decision requested in the issue",
-   "ref": "uncommitted-bdr-034-draft-blocks-main",
-   "severity": "high",
-   "n": 2
-  },
-  {
-   "item": "5 uncommitted files in the main checkout: .sdlc/mailbox/backlog/idea-adr-persistence-sqlite-move-log.md, .sdlc/mailbox/backlog/idea-agent-onboarding-discovery.md, .sdlc/mailbox/backlog/idea-loop-isolate-working-trees.md, .sdlc/mailbox/backlog/idea-loop-mailbox-is-tracked-now.md ...",
+   "item": "6 uncommitted files in the main checkout: .sdlc/mailbox/backlog/idea-adr-persistence-sqlite-move-log.md, .sdlc/mailbox/backlog/idea-agent-onboarding-discovery.md, .sdlc/mailbox/backlog/idea-loop-isolate-working-trees.md, .sdlc/mailbox/backlog/idea-loop-mailbox-is-tracked-now.md ...",
    "kind": "Loop coordination",
    "ask": "Ask the owning loop to commit or park them on wip/<loop>; they are not counted as progress",
    "ref": "loop-coordination rule 11-12",
    "severity": "high",
-   "n": 3
+   "n": 1
   },
   {
    "item": "Live session 8e59714e is not in .sdlc/loops.json",
@@ -30,10 +14,26 @@
    "ask": "Register it, or confirm it runs no loop",
    "ref": "loop-coordination rule 1",
    "severity": "medium",
-   "n": 4
+   "n": 2
+  },
+  {
+   "item": "Live session bd9e2cc7 is not in .sdlc/loops.json",
+   "kind": "Loop coordination",
+   "ask": "Register it, or confirm it runs no loop",
+   "ref": "loop-coordination rule 1",
+   "severity": "medium",
+   "n": 3
   },
   {
    "item": "Worktree /private/tmp/claude-501/-Users-owenzanzal-CvilleAIEx-agent-connect-4/8e59714e-fca1-4077-9dcc-333ec2dd980e/scratchpad/wt-bdr has no owner in .sdlc/loops.json",
+   "kind": "Loop coordination",
+   "ask": "Register it to its loop or remove it",
+   "ref": "loop-coordination rule 13",
+   "severity": "low",
+   "n": 4
+  },
+  {
+   "item": "Worktree /private/tmp/claude-501/-Users-owenzanzal-CvilleAIEx-agent-connect-4/bd9e2cc7-288c-4788-a870-93294435abed/scratchpad/seat-wt has no owner in .sdlc/loops.json",
    "kind": "Loop coordination",
    "ask": "Register it to its loop or remove it",
    "ref": "loop-coordination rule 13",
@@ -50,7 +50,7 @@
   },
   {
    "label": "Collected",
-   "value": "2026-11-20T01:52:56Z"
+   "value": "2026-11-20T02:52:57Z"
   }
  ]
 }

@@ -273,10 +273,10 @@
   {
    "bdr": "BDR-028",
    "title": "Recover After a Browser Disconnect",
-   "status": "Proposed",
+   "status": "Accepted",
    "outcomes": "",
    "issue": "closed",
-   "acDone": 0,
+   "acDone": 3,
    "acTotal": 3,
    "satisfied": true
   },
@@ -340,7 +340,7 @@
   },
   {
    "label": "Collected",
-   "value": "2026-11-20T01:52:56Z"
+   "value": "2026-11-20T02:52:57Z"
   }
  ]
 }
