@@ -31,3 +31,12 @@ Partly adopted. `.sdlc/dashboard/loops.json` now lists 2 loops with their sessio
 ## Decision (2026-11-18 retro)
 
 Accepted as part of retro item 1. Tracked in `issues/loops-adopt-coordination-protocol.md`; rules in `docs/specs/practices/loop-coordination.md`.
+
+## Evidence (2026-11-20T04:14Z, improvement loop)
+
+Two sessions that aren't in the registry now own worktrees, and their work overlaps:
+
+- `8e59714e`: `scratchpad/wt-bdr` on `bdr/034-036-browser-seats`, commit `5be86ea` (20:49 local), which adds BDR-034 to BDR-036. Its draft of BDR-034 was the uncommitted file that blocked main from 20:01Z to 01:49Z. It moved the draft into its own worktree and committed it there, so the work was **not lost**, though the improvement loop had worried it might be.
+- `bd9e2cc7`: `scratchpad/seat-wt` on `feat/browser-join-seat`, commit `c054545` (21:53 local), "let a visitor take an open seat (BDR-034)".
+
+`feat/browser-join-seat` is **not** based on `bdr/034-036-browser-seats`, and BDR-034 isn't on main. So the code is being written against a BDR that no reviewer or loop can see on main. Neither session claims a mailbox item, and the BDR verify loop can't check AC coverage for a BDR it has never seen. If these are the owner's interactive sessions, that's fine, but the registry should still have a lightweight entry for them (`loop: "owner interactive"`, `worktree`, `writes`), so the dashboard can tell an owner's work apart from a stray session and loops avoid editing the same files.
