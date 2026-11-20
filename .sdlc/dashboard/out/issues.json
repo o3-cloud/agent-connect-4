@@ -675,12 +675,12 @@
   {
    "id": "journal-fsync-serializes-all-games",
    "title": "With a journal on macOS, 100 concurrent games miss BDR-031's 200 ms p95: one global fsync queue",
-   "status": "open",
+   "status": "closed",
    "source": "bdr-verification",
    "bdr": "[BDR-031, BDR-018]",
    "branch": "main",
    "found": "2026-11-20",
-   "closedApprox": "",
+   "closedApprox": "2026-11-20",
    "acDone": 0,
    "acCriteriaDone": 0,
    "acTotal": 0,
@@ -906,7 +906,7 @@
   },
   {
    "label": "Collected",
-   "value": "2026-11-20T03:52:53Z"
+   "value": "2026-11-20T04:52:52Z"
   }
  ]
 }
